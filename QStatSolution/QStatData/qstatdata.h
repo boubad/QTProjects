@@ -2,6 +2,7 @@
 #define QSTATDATA_H
 #include <QString>
 #include <QVariant>
+#include <QDataStream>
 /////////////////////////////////////////
 namespace info {
 //////////////////////////////////////////
@@ -27,6 +28,7 @@ protected:
     inline void version(const IntType n){
         this->m_version = n;
     }
+
 public:
     virtual ~StatBaseItem();
 public:
@@ -59,6 +61,8 @@ public:
     }
 public:
     virtual bool is_writeable(void) const = 0;
+    virtual QDataStream & write_to(QDataStream &out) const;
+    virtual QDataStream & read_from(QDataStream &in);
 };// class StatBaseItem
 ///////////////////////////////////////////////
 class StatNamedItem : public StatBaseItem {
@@ -98,6 +102,8 @@ public:
     }
 public:
     virtual bool is_writeable(void) const;
+    virtual QDataStream & write_to(QDataStream &out) const;
+    virtual QDataStream & read_from(QDataStream &in);
 };
 ////////////////////////////////////////////////
 class DBStatDataset : public StatNamedItem {
@@ -140,6 +146,8 @@ public:
         return (this->m_datasetid);
     }
     virtual bool is_writeable(void) const;
+    virtual QDataStream & write_to(QDataStream &out) const;
+    virtual QDataStream & read_from(QDataStream &in);
 }; // class DBStatDatasetChild
 ///////////////////////////////////////////////
 class DBStatVariable : public DBStatDatasetChild {
@@ -187,6 +195,8 @@ public:
     }
     virtual bool is_writeable(void) const;
     void swap(DBStatVariable &other);
+    virtual QDataStream & write_to(QDataStream &out) const;
+    virtual QDataStream & read_from(QDataStream &in);
 }; // class DBStatVariable
 ///////////////////////////////////////////////////
 class DBStatIndiv : public DBStatDatasetChild {
@@ -247,6 +257,8 @@ public:
 
     virtual bool is_writeable(void) const;
     void swap(DBStatValue &other);
+    virtual QDataStream & write_to(QDataStream &out) const;
+    virtual QDataStream & read_from(QDataStream &in);
 }; // class DBStatValue
 ////////////////////////////////////////////////////
 }// namespace info
@@ -262,6 +274,13 @@ inline void swap(info::DBStatIndiv &v1, info::DBStatIndiv &v2) {
 }
 inline void swap(info::DBStatValue &v1, info::DBStatValue &v2) {
     v1.swap(v2);
+}
+/////////////////////////////////////////
+inline QDataStream & operator<<(QDataStream &out,const info::StatBaseItem &o){
+    return o.write_to(out);
+}
+inline QDataStream & operator>>(QDataStream &in,info::StatBaseItem &o){
+    return o.read_from(in);
 }
 /////////////////////////////////////////
 #endif // QSTATDATA_H

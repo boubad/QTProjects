@@ -37,6 +37,20 @@ void DBStatValue::swap(DBStatValue &other) {
     *this = other;
     other = t;
 }// swap
+QDataStream & DBStatValue::write_to(QDataStream &out) const{
+    StatBaseItem::write_to(out);
+    out << this->m_varid;
+    out << this->m_indid;
+    out << this->m_val;
+    return out;
+}
+QDataStream & DBStatValue::read_from(QDataStream &in){
+    StatBaseItem::read_from(in);
+    in >> this->m_varid;
+    in >> this->m_indid;
+    in >> this->m_val;
+    return in;
+}
 /////////////////////////////////////////////////
 DBStatIndiv::DBStatIndiv(const IntType n) : DBStatDatasetChild(n) {}
 
@@ -127,6 +141,20 @@ void DBStatVariable::swap(DBStatVariable &other) {
     *this = other;
     other = t;
 }// swap
+QDataStream & DBStatVariable::write_to(QDataStream &out) const{
+    DBStatDatasetChild::write_to(out);
+    out << this->m_categ;
+    out << this->m_type;
+    out << this->m_genre;
+    return out;
+}
+QDataStream & DBStatVariable::read_from(QDataStream &in){
+    DBStatDatasetChild::read_from(in);
+    in >> this->m_categ;
+    in >> this->m_type;
+    in >> this->m_genre;
+    return in;
+}
 ///////////////////////////////////////////////
 DBStatDatasetChild::DBStatDatasetChild() :m_datasetid(0) {
 }
@@ -156,6 +184,16 @@ DBStatDatasetChild & DBStatDatasetChild::operator=(const DBStatDatasetChild &oth
 DBStatDatasetChild::~DBStatDatasetChild() {}
 bool DBStatDatasetChild::is_writeable(void) const {
     return ((this->m_datasetid != 0) && StatNamedItem::is_writeable());
+}
+QDataStream & DBStatDatasetChild::write_to(QDataStream &out) const{
+    StatNamedItem::write_to(out);
+    out << this->m_datasetid;
+    return out;
+}
+QDataStream & DBStatDatasetChild::read_from(QDataStream &in){
+    StatNamedItem::read_from(in);
+    in >> this->m_datasetid;
+    return in;
 }
 /////////////////////////////////////////////
 DBStatDataset::DBStatDataset() {
@@ -225,6 +263,20 @@ bool StatNamedItem::is_writeable(void) const{
     const QString &s = this->sigle();
     return ((!s.isEmpty()) && (!s.isNull()));
 }
+QDataStream & StatNamedItem::write_to(QDataStream &out) const{
+    StatBaseItem::write_to(out);
+    out << this->m_sigle;
+    out << this->m_name;
+    out << this->m_desc;
+    return out;
+}
+QDataStream & StatNamedItem::read_from(QDataStream &in){
+    StatBaseItem::read_from(in);
+    in >> this->m_sigle;
+    in >> this->m_name;
+    in >> this->m_desc;
+    return in;
+}
 ///////////////////////////////////////////////
 StatBaseItem::StatBaseItem() :m_id(0), m_version(0) {
 }
@@ -246,5 +298,18 @@ StatBaseItem & StatBaseItem::operator=(const StatBaseItem &other) {
 StatBaseItem::~StatBaseItem() {
 
 }
+QDataStream & StatBaseItem::write_to(QDataStream &out) const{
+    out << this->m_id;
+    out << this->m_version;
+    out << this->m_status;
+    return out;
+}
+QDataStream & StatBaseItem::read_from(QDataStream &in){
+    in >> this->m_id;
+    in >> this->m_version;
+    in >> this->m_status;
+    return in;
+}
+
 //////////////////////////////////////////////
 }// namespace info

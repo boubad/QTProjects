@@ -80,11 +80,39 @@ static const char *SQL_UPDATE_DATASET =
         "UPDATE dbdataset SET optlock = optlock + 1,"
         " sigle = :sigle, nom = :name, description = :desc, status = :status WHERE datasetid = :id";
 static const char *SQL_REMOVE_DATASET =
-        "DELETE FROM dbdataset WHERE datasetid = ?1";
+        "DELETE FROM dbdataset WHERE datasetid = :id";
 ////////////////////////////////////
 /// \brief DBStatHelper::find_dataset
 /// \param cur
 /// \return
+bool DBStatHelper::remove_dataset(const DBStatDataset &cur){
+    DBStatDataset xSet(cur);
+    if (!this->find_dataset(xSet)){
+        return (false);
+    }
+    bool bInTrans = this->m_base.transaction();
+    IntType nId = xSet.id();
+    Q_ASSERT(nId != 0);
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_REMOVE_DATASET)){
+        if (bInTrans){
+            this->m_base.rollback();
+        }
+        return (false);
+    }
+    q.bindValue(":id",nId);
+    if (!q.exec()){
+        if (bInTrans){
+            this->m_base.rollback();
+        }
+        return (false);
+    }
+    if (bInTrans){
+        this->m_base.commit();
+    }
+    return (true);
+}
+
 bool DBStatHelper::maintains_dataset(DBStatDataset &cur){
     if (!cur.is_writeable()){
         return (false);
@@ -94,6 +122,51 @@ bool DBStatHelper::maintains_dataset(DBStatDataset &cur){
     this->find_dataset(xSet);
     IntType nId = xSet.id();
     QString sigle = cur.sigle();
+    QString name = cur.name();
+    QString desc = cur.description();
+    QString status = cur.status();
+    if (nId != 0){
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_UPDATE_DATASET)){
+            if (bInTrans){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+        q.bindValue(":sigle",sigle);
+        q.bindValue(":name",name);
+        q.bindValue(":desc",desc);
+        q.bindValue(":status",status);
+        q.bindValue(":id",nId);
+        if (!q.exec()){
+            if (bInTrans){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+    } else {
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_INSERT_DATASET)){
+            if (bInTrans){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+        q.bindValue(":sigle",sigle);
+        q.bindValue(":name",name);
+        q.bindValue(":desc",desc);
+        q.bindValue(":status",status);
+        if (!q.exec()){
+            if (bInTrans){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+    }
+    if (bInTrans){
+        this->m_base.commit();
+    }
+    return (this->find_dataset(cur));
 }// maintains_datase
 bool DBStatHelper::find_dataset(DBStatDataset &cur){
     IntType nId = cur.id();

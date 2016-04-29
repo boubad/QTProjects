@@ -39,6 +39,7 @@ public slots:
     bool find_all_datasets(QList<DBStatDataset> &oList);
     bool find_dataset(DBStatDataset &cur);
     bool maintains_dataset(DBStatDataset &cur);
+    bool remove_dataset(const DBStatDataset &cur);
 };
 }// namespace info
 
