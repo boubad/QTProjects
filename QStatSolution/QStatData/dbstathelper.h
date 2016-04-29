@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QString>
 #include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QList>
 ////////////////////////////////
 #include "qstatdata.h"
 //
@@ -19,6 +21,11 @@ private:
     static const QString DEFAULT_DATABASE_TYPE;
     static const QString DEFAULT_CONNECTION_NAME;
     static const QString DEFAULT_DATABASE_NAME;
+    //
+    void read_dataset(QSqlQuery &q, DBStatDataset &cur);
+    void read_variable(QSqlQuery &q, DBStatVariable &cur);
+    void read_indiv(QSqlQuery &q, DBStatIndiv &cur);
+    void read_value(QSqlQuery &q, DBStatValue &cur);
 public:
     explicit DBStatHelper(const QString &baseType = DEFAULT_DATABASE_TYPE,
                           const QString &sDatabaseName = DEFAULT_DATABASE_NAME,
@@ -29,6 +36,9 @@ public:
 signals:
 
 public slots:
+    bool find_all_datasets(QList<DBStatDataset> &oList);
+    bool find_dataset(DBStatDataset &cur);
+    bool maintains_dataset(DBStatDataset &cur);
 };
 }// namespace info
 

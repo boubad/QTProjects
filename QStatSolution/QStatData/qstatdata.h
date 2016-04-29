@@ -5,7 +5,7 @@
 /////////////////////////////////////////
 namespace info {
 //////////////////////////////////////////
-typedef unsigned long IntType;
+typedef int IntType;
 class DBStatHelper;
 ///////////////////////////////////////////
 class StatBaseItem {
@@ -62,6 +62,7 @@ public:
 };// class StatBaseItem
 ///////////////////////////////////////////////
 class StatNamedItem : public StatBaseItem {
+    friend class DBStatHelper;
 protected:
     StatNamedItem();
     StatNamedItem(const QString &sSigle, const QString &sName, const QString &sDesc);
@@ -100,6 +101,7 @@ public:
 };
 ////////////////////////////////////////////////
 class DBStatDataset : public StatNamedItem {
+    friend class DBStatHelper;
 protected:
     DBStatDataset(const IntType nId);
     DBStatDataset(const IntType nId, const IntType nVersion, const QString &status,
@@ -115,6 +117,7 @@ public:
 }; // class DBStatDataset
 ///////////////////////////////////////////////
 class DBStatDatasetChild : public StatNamedItem {
+    friend class DBStatHelper;
 private:
     IntType m_datasetid;
 protected:
@@ -140,6 +143,7 @@ public:
 }; // class DBStatDatasetChild
 ///////////////////////////////////////////////
 class DBStatVariable : public DBStatDatasetChild {
+    friend class DBStatHelper;
 private:
     bool m_categ;
     QString m_type;
@@ -186,6 +190,7 @@ public:
 }; // class DBStatVariable
 ///////////////////////////////////////////////////
 class DBStatIndiv : public DBStatDatasetChild {
+    friend class DBStatHelper;
 protected:
     DBStatIndiv(const IntType nId);
     DBStatIndiv(const IntType nId, const IntType nVersion, const QString &status,
@@ -204,6 +209,7 @@ public:
 }; // class DBStatIndiv
 ///////////////////////////////////////////////////
 class DBStatValue : public StatBaseItem {
+    friend class DBStatHelper;
 private:
     IntType m_varid;
     IntType m_indid;

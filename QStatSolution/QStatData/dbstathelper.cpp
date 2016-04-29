@@ -1,7 +1,7 @@
 #include "dbstathelper.h"
 /////////////////////////////////////
-#include <QSqlQuery>
 #include <QSqlError>
+#include <QList>
 ///////////////////////////////////
 namespace info {
 ///////////////////////////
@@ -58,16 +58,138 @@ static const char *SQL_CREATE_VALUE =
         " CONSTRAINT fk_value_indiv FOREIGN KEY (individ) REFERENCES dbindiv (individ) ON DELETE CASCADE"
         " )";
 static const char *CREATE_SQL[] = {
-        SQL_CREATE_DATASET,
-        SQL_CREATE_VARIABLE,
-        SQL_CREATE_INDIV,
-        SQL_CREATE_VALUE,
-        nullptr };
+    SQL_CREATE_DATASET,
+    SQL_CREATE_VARIABLE,
+    SQL_CREATE_INDIV,
+    SQL_CREATE_VALUE,
+    nullptr };
+/////////////////////////////////////
+static const char *SQL_FIND_ALL_DATASETS =
+        "SELECT datasetid,optlock,sigle,nom,description,status"
+        " FROM dbdataset ORDER BY sigle";
+static const char *SQL_FIND_DATASET_BY_ID =
+        "SELECT datasetid,optlock,sigle,nom,description,status"
+        " FROM dbdataset WHERE datasetid = :id";
+static const char *SQL_FIND_DATASET_BY_SIGLE =
+        "SELECT datasetid,optlock,sigle,nom,description,status"
+        " FROM dbdataset WHERE UPPER(LTRIM(RTRIM(sigle))) = :sigle";
+static const char *SQL_INSERT_DATASET =
+        "INSERT INTO dbdataset (sigle,nom,description,status)"
+        " VALUES (:sigle,:name,:desc,:status)";
+static const char *SQL_UPDATE_DATASET =
+        "UPDATE dbdataset SET optlock = optlock + 1,"
+        " sigle = :sigle, nom = :name, description = :desc, status = :status WHERE datasetid = :id";
+static const char *SQL_REMOVE_DATASET =
+        "DELETE FROM dbdataset WHERE datasetid = ?1";
+////////////////////////////////////
+/// \brief DBStatHelper::find_dataset
+/// \param cur
+/// \return
+bool DBStatHelper::maintains_dataset(DBStatDataset &cur){
+    if (!cur.is_writeable()){
+        return (false);
+    }
+    bool bInTrans = this->m_base.transaction();
+    DBStatDataset xSet(cur);
+    this->find_dataset(xSet);
+    IntType nId = xSet.id();
+    QString sigle = cur.sigle();
+}// maintains_datase
+bool DBStatHelper::find_dataset(DBStatDataset &cur){
+    IntType nId = cur.id();
+    if (nId != 0){
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_FIND_DATASET_BY_ID)){
+            return (false);
+        }
+        q.bindValue(":id",nId);
+        if (!q.exec()){
+            return (false);
+        }
+        if (q.next()){
+            this->read_dataset(q,cur);
+            return (true);
+        }
+    }
+    QString sigle = cur.sigle();
+    if ((!sigle.isEmpty()) && (!sigle.isNull())) {
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_FIND_DATASET_BY_SIGLE)){
+            return (false);
+        }
+        q.bindValue(":sigle",sigle);
+        if (!q.exec()){
+            return (false);
+        }
+        if (q.next()){
+            this->read_dataset(q,cur);
+            return (true);
+        }
+    }
+    return (false);
+}// find_dataset
+bool  DBStatHelper::find_all_datasets(QList<DBStatDataset> &oList){
+    oList.clear();
+    QSqlQuery q(SQL_FIND_ALL_DATASETS,this->m_base);
+    while (q.next()){
+        DBStatDataset cur;
+        this->read_dataset(q,cur);
+        oList.append(cur);
+    }
+    return (true);
+}//find_all_datasets
+////////////////////////////////////
+void DBStatHelper::read_dataset(QSqlQuery &q, DBStatDataset &cur){
+    IntType nId = q.value(0).toInt();
+    IntType nVersion = q.value(1).toInt();
+    QString sSigle = q.value(2).toString();
+    QString sName = q.value(3).toString();
+    QString sDesc = q.value(4).toString();
+    QString status = q.value(5).toString();
+    cur = DBStatDataset(nId,nVersion,status,sSigle,sName,sDesc);
+}
+
+void DBStatHelper::read_variable(QSqlQuery &q, DBStatVariable &cur){
+    IntType nId = q.value(0).toInt();
+    IntType nVersion = q.value(1).toInt();
+    IntType nDatasetId = q.value(2).toInt();
+    QString sSigle = q.value(3).toString();
+    QString sType = q.value(4).toString();
+    int nCateg = q.value(5).toInt();
+    QString sName = q.value(6).toString();
+    QString sDesc = q.value(7).toString();
+    QString sGenre = q.value(8).toString();
+    QString status = q.value(9).toString();
+    bool bCateg = (nCateg != 0)? true : false;
+    cur = DBStatVariable(nId,nVersion,status,sSigle,sName,sDesc,nDatasetId,
+                         bCateg,sType,sGenre);
+}
+
+void DBStatHelper::read_indiv(QSqlQuery &q, DBStatIndiv &cur){
+    IntType nId = q.value(0).toInt();
+    IntType nVersion = q.value(1).toInt();
+    IntType nDatasetId = q.value(2).toInt();
+    QString sSigle = q.value(3).toString();
+    QString sName = q.value(4).toString();
+    QString sDesc = q.value(5).toString();
+    QString status = q.value(6).toString();
+    cur = DBStatIndiv(nId,nVersion,status,sSigle,sName,sDesc,nDatasetId);
+}
+
+void DBStatHelper::read_value(QSqlQuery &q, DBStatValue &cur){
+    IntType nId = q.value(0).toInt();
+    IntType nVersion = q.value(1).toInt();
+    IntType nVarId = q.value(2).toInt();
+    IntType nIndId = q.value(3).toInt();
+    QVariant v = q.value(4);
+    QString status = q.value(5).toString();
+    cur = DBStatValue(nId,nVersion,status,nVarId,nIndId,v);
+}
 ////////////////////////////////
-DBStatHelper:: DBStatHelper(const QString &baseType /*= DEFAULT_DATABASE_TYPE*/,
-                            const QString &sDatabaseName /* = DEFAULT_DATABASE_NAME*/,
-                            const QString &ConnectionName  /*= DEFAULT_CONNECTION_NAME*/,
-                            QObject *parent /*= 0*/) : QObject(parent)
+DBStatHelper::DBStatHelper(const QString &baseType /*= DEFAULT_DATABASE_TYPE*/,
+                           const QString &sDatabaseName /* = DEFAULT_DATABASE_NAME*/,
+                           const QString &ConnectionName  /*= DEFAULT_CONNECTION_NAME*/,
+                           QObject *parent /*= 0*/) : QObject(parent)
 {
     this->m_base = QSqlDatabase::addDatabase(baseType,ConnectionName);
     Q_ASSERT(this->m_base.isValid());
@@ -79,7 +201,7 @@ DBStatHelper:: DBStatHelper(const QString &baseType /*= DEFAULT_DATABASE_TYPE*/,
 DBStatHelper::DBStatHelper(QSqlDatabase &oBase,QObject *parent /* = 0/*/):QObject(parent),
     m_base(oBase){
     Q_ASSERT(this->m_base.isOpen());
-     this->check_schema();
+    this->check_schema();
 }
 void DBStatHelper::check_schema(void){
     QString sDriverName = this->m_base.driverName();
