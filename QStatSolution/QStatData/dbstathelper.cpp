@@ -64,9 +64,14 @@ static const char *CREATE_SQL[] = {
     SQL_CREATE_VALUE,
     nullptr };
 /////////////////////////////////////
+static const char *SQL_FIND_ALL_DATASETS_IDS =
+        "SELECT datasetid"
+        " FROM dbdataset ORDER BY datasetid"
+        " LIMIT ?:taken OFFSET :skip";
 static const char *SQL_FIND_ALL_DATASETS =
         "SELECT datasetid,optlock,sigle,nom,description,status"
-        " FROM dbdataset ORDER BY sigle";
+        " FROM dbdataset ORDER BY sigle"
+        " LIMIT ?:taken OFFSET :skip";
 static const char *SQL_FIND_DATASET_BY_ID =
         "SELECT datasetid,optlock,sigle,nom,description,status"
         " FROM dbdataset WHERE datasetid = :id";
@@ -81,10 +86,806 @@ static const char *SQL_UPDATE_DATASET =
         " sigle = :sigle, nom = :name, description = :desc, status = :status WHERE datasetid = :id";
 static const char *SQL_REMOVE_DATASET =
         "DELETE FROM dbdataset WHERE datasetid = :id";
+static const char *SQL_FIND_DATASETS_COUNT =
+        "SELECT COUNT(*) FROM dbdataset";
+//
+static const char *SQL_FIND_DATASET_VARIABLES =
+        "SELECT variableid, optlock, datasetid , sigle, vartype, categvar, nom, description, genre, status"
+        " FROM dbvariable WHERE datasetid = :datasetid"
+        " ORDER BY categvar DESC, sigle ASC"
+        " LIMIT :taken OFFSET :skip";
+static const char *SQL_FIND_DATASET_VARIABLES_IDS =
+        "SELECT variableid FROM dbvariable WHERE datasetid = :datasetid"
+        " ORDER BY variableid"
+        " LIMIT :taken OFFSET :skip";
+static const char *SQL_VARIABLE_BY_ID =
+        "SELECT variableid,optlock,datasetid,sigle,vartype,categvar,nom,description,genre,status"
+        " FROM dbvariable WHERE variableid = :id";
+static const char *SQL_VARIABLE_BY_DATASET_AND_SIGLE =
+        "SELECT variableid,optlock,datasetid,sigle,vartype,categvar,nom,description,genre,status"
+        " FROM dbvariable WHERE datasetid = :datasetid AND UPPER(LTRIM(RTRIM(sigle))) = :sigle";
+static const char *SQL_INSERT_VARIABLE =
+        "INSERT INTO dbvariable (datasetid,sigle,vartype,categvar,nom,description,genre,status)"
+        " VALUES (:datsetid,:sigle,:vartype,:categ,:name,:desc,:genre,:status)";
+static const char *SQL_UPDATE_VARIABLE =
+        "UPDATE dbvariable SET optlock = optlock + 1,"
+        " sigle = :sigle, vartype = :vartype, categvar = :categ, nom = :name, description = :desc, genre = :genre, status = :status WHERE variableid = :id";
+static const char *SQL_REMOVE_VARIABLE =
+        "DELETE FROM dbvariable WHERE variableid = :id";
+static const char *SQL_FIND_DATASET_VARIABLES_COUNT =
+        "SELECT COUNT(*) FROM dbvariable WHERE datasetid = :datasetid";
+//
+static const char *SQL_FIND_DATASET_INDIVS_COUNT =
+        "SELECT COUNT(*) FROM dbindiv"
+        " WHERE datasetid = :datasetid";
+static const char *SQL_GET_DATASET_INDIV_IDS =
+        "SELECT individ FROM dbindiv"
+        " WHERE datasetid = ?1 ORDER BY individ ASC"
+        " LIMIT :taken OFFSET :skip";
+static const char *SQL_FIND_DATASET_INDIVS =
+        "SELECT individ,optlock,datasetid,sigle,nom,description,status"
+        " FROM dbindiv WHERE datasetid = :datasetid ORDER BY sigle"
+        " LIMIT :taken OFFSET :skip";
+static const char *SQL_INDIV_BY_ID =
+        "SELECT individ,optlock,datasetid,sigle,nom,description,status"
+        " FROM dbindiv WHERE individ = :id";
+static const char *SQL_INDIV_BY_DATASET_AND_SIGLE =
+        "SELECT individ,optlock,datasetid,sigle,nom,description,status"
+        " FROM dbindiv WHERE datasetid = :datasetid AND UPPER(LTRIM(RTRIM(sigle))) = :sigle";
+static const char *SQL_INSERT_INDIV =
+        "INSERT INTO dbindiv (datasetid,sigle,nom,description,status)"
+        " VALUES(:datasetid,:sigle,:name,:desc,:status)";
+static const char *SQL_UPDATE_INDIV =
+        "UPDATE dbindiv SET optlock = OPTLOCK + 1,"
+        " sigle = :sigle, nom = :name, description = :desc, status = :status WHERE individ = :id";
+static const char *SQL_REMOVE_INDIV =
+        "REMOVE FROM dbindiv WHERE individ = :id";
+//
+static const char *SQL_VALUE_BY_ID =
+        "SELECT valueid,optlock,variableid,individ,stringval,status"
+        " FROM dbvalue WHERE valueid = :id";
+static const char *SQL_VALUES_BY_VARIABLE_INDIV =
+        "SELECT valueid,optlock,variableid,individ,stringval,status"
+        " FROM dbvalue WHERE variableid = :varid AND individ = :indid";
+static const char *SQL_INSERT_VALUE =
+        "INSERT INTO dbvalue (variableid,individ,stringval,status)"
+        " VALUES(:varid,:indif,:stringval,:status)";
+static const char *SQL_UPDATE_VALUE =
+        "UPDATE dbvalue SET optlock = optlock + 1,"
+        " stringval = :stringval, status = :status WHERE valueid = :id ";
+static const char *SQL_REMOVE_VALUE =
+        "DELETE from dbvalue WHERE valueid = :id";
+static const char *SQL_FIND_DATASET_VALUES_COUNT = "SELECT COUNT(*)"
+                                                   " FROM dbvalue a, dbvariable b"
+                                                   " WHERE a.variableid = b.variableid AND b.datasetid = :datasetid";
+static const char *SQL_FIND_DATASET_VALUES =
+        "SELECT a.valueid,a.optlock,a.variableid,a.individ,a.stringval,a.status"
+        " FROM dbvalue a, dbvariable b"
+        " WHERE a.variableid = b.variableid AND b.datasetid = :datasetid"
+        " ORDER BY a.variableid ASC, a.individ ASC"
+        " LIMIT ?:taken OFFSET :skip";
+static const char *SQL_VALUES_BY_VARIABLEID =
+        "SELECT valueid,optlock,variableid,individ,stringval,status"
+        " FROM dbvalue WHERE variableid = :varid"
+        " LIMIT ?:taken OFFSET :skip";
+static const char *SQL_VALUES_BY_INDIVID =
+        "SELECT valueid,optlock,variableid,individ,stringval,status"
+        " FROM dbvalue WHERE individ = :indid"
+        " LIMIT ?:taken OFFSET :skip";
+static const char *SQL_VARIABLE_VALUES_DISTINCT =
+        "SELECT DISTINCT stringval FROM dbvalue WHERE variableid = :varid"
+        " LIMIT ?:taken OFFSET :skip";
+//////////////////// VALUES /////////////////////
+bool  DBStatHelper::find_dataset_values_count(const DBStatDataset &oSet, int &nCount){
+    DBStatDataset xSet(oSet);
+    nCount = 0;
+    if (!this->find_dataset(xSet)){
+        return (false);
+    }
+    IntType nDatasetId = xSet.id();
+    Q_ASSERT(nDatasetId != 0);
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_FIND_DATASET_VALUES_COUNT)){
+        return (false);
+    }
+    q.bindValue(":datasetid",nDatasetId);
+    if (!q.exec()){
+        return (false);
+    }
+    if (q.next()){
+        nCount = q.value(0).toInt();
+    }
+    return (true);
+}//find_dataset_values_count
+
+bool  DBStatHelper::find_dataset_values(const DBStatDataset &oSet,
+                                        QList<DBStatValue> &oList,
+                                        int skip /*= 0*/, int count /*= 100*/){
+    oList.clear();
+    if (skip < 0){
+        skip = 0;
+    }
+    if (count < 1){
+        count = 100;
+    }
+    DBStatDataset xSet(oSet);
+    if (!this->find_dataset(xSet)){
+        return (false);
+    }
+    IntType nDatasetId = xSet.id();
+    Q_ASSERT(nDatasetId != 0);
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_FIND_DATASET_VALUES)){
+        return (false);
+    }
+    q.bindValue(":datasetid",nDatasetId);
+    q.bindValue(":taken",count);
+    q.bindValue(":skip",skip);
+    if (!q.exec()){
+        return (false);
+    }
+    while (q.next()){
+        DBStatValue cur;
+        this->read_value(q,cur);
+        oList.append(cur);
+    }
+    return (true);
+}//find_dataset_values
+
+bool  DBStatHelper::find_variable_values(DBStatVariable &oVar,QList<DBStatValue> &oList,
+                                         int skip /*= 0*/, int count /*= 100*/){
+    oList.clear();
+    if (skip < 0){
+        skip = 0;
+    }
+    if (count < 1){
+        count = 100;
+    }
+    if (!this->find_variable(oVar)){
+        return (false);
+    }
+    IntType nVarId = oVar.id();
+    Q_ASSERT(nVarId != 0);
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_VALUES_BY_VARIABLEID)){
+        return (false);
+    }
+    q.bindValue(":varid",nVarId);
+    q.bindValue(":taken",count);
+    q.bindValue(":skip",skip);
+    if (!q.exec()){
+        return (false);
+    }
+    while (q.next()){
+        DBStatValue cur;
+        this->read_value(q,cur);
+        oList.append(cur);
+    }
+    return (true);
+}
+
+bool  DBStatHelper::find_variable_distinct_values(DBStatVariable &oVar,
+                                                  QList<DBStatValue> &oList,
+                                                  int skip /*= 0*/, int count /*= 100*/){
+    oList.clear();
+    if (skip < 0){
+        skip = 0;
+    }
+    if (count < 1){
+        count = 100;
+    }
+    if (!this->find_variable(oVar)){
+        return (false);
+    }
+    IntType nVarId = oVar.id();
+    Q_ASSERT(nVarId != 0);
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_VARIABLE_VALUES_DISTINCT)){
+        return (false);
+    }
+    q.bindValue(":varid",nVarId);
+    q.bindValue(":taken",count);
+    q.bindValue(":skip",skip);
+    if (!q.exec()){
+        return (false);
+    }
+    while (q.next()){
+        DBStatValue cur;
+        this->read_value(q,cur);
+        oList.append(cur);
+    }
+    return (true);
+}//find_variable_distinct_values
+
+bool  DBStatHelper::find_indiv_values(DBStatIndiv &oInd, QList<DBStatValue> &oList,
+                                      int skip /*= 0*/, int count /*= 100*/){
+    oList.clear();
+    if (skip < 0){
+        skip = 0;
+    }
+    if (count < 1){
+        count = 100;
+    }
+    if (!this->find_indiv(oInd)){
+        return (false);
+    }
+    IntType nIndId = oInd.id();
+    Q_ASSERT(nIndId != 0);
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_VALUES_BY_INDIVID)){
+        return (false);
+    }
+    q.bindValue(":indid",nIndId);
+    q.bindValue(":taken",count);
+    q.bindValue(":skip",skip);
+    if (!q.exec()){
+        return (false);
+    }
+    while (q.next()){
+        DBStatValue cur;
+        this->read_value(q,cur);
+        oList.append(cur);
+    }
+    return (true);
+}//find_indiv_values
+
+///
+bool DBStatHelper::maintains_values(const QList<DBStatValue> &oVals,
+                                    bool bCommit /*= true*/,
+                                    bool bRemove /*= false*/){
+    bool bInTrans = false;
+    if (bCommit){
+        bInTrans = this->m_base.transaction();
+    }
+    //
+    QSqlQuery qInsert(this->m_base);
+    QSqlQuery qUpdate(this->m_base);
+    QSqlQuery qRemove(this->m_base);
+    //
+    if (bRemove){
+        if (!qRemove.prepare(SQL_REMOVE_VALUE)){
+            if (bCommit && bInTrans){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+    } else {
+        bool bRet = qInsert.prepare(SQL_INSERT_VALUE) &&
+                qUpdate.prepare(SQL_UPDATE_VALUE);
+        if (!bRet){
+            if (bCommit && bInTrans){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+    }
+    //
+    Q_FOREACH(const DBStatValue &oVal,oVals)
+    {
+        bool mustRemove = bRemove;
+        DBStatValue xVal(oVal);
+        this->find_value(xVal);
+        IntType nId = xVal.id();
+        QString sval = oVal.value().toString();
+        if (nId != 0){
+            if (sval.isNull() || sval.isEmpty()){
+                mustRemove = true;
+            }
+        }
+        if (mustRemove){
+            if (nId != 0){
+                qRemove.bindValue(":id",nId);
+                if (!qRemove.exec()){
+                    if (bCommit && bInTrans){
+                        this->m_base.rollback();
+                    }
+                    return (false);
+                }
+            }// nId
+        } else if (oVal.is_writeable()){
+            QString status = oVal.status();
+            if (nId != 0){
+                qUpdate.bindValue(":stringval",sval);
+                qUpdate.bindValue(":status",status);
+                qUpdate.bindValue(":id",nId);
+                if (!qUpdate.exec()){
+                    if (bCommit && bInTrans){
+                        this->m_base.rollback();
+                    }
+                    return (false);
+                }
+            } else {
+                IntType nVarId = oVal.variable_id();
+                IntType nIndId = oVal.indiv_id();
+                qInsert.bindValue(":varid",nVarId);
+                qInsert.bindValue(":indid",nIndId);
+                qInsert.bindValue(":stringval",sval);
+                qInsert.bindValue(":status",status);
+                if (!qInsert.exec()){
+                    if (bCommit && bInTrans){
+                        this->m_base.rollback();
+                    }
+                    return (false);
+                }
+            }
+        }
+    }// oInd
+    //
+    if (bCommit && bInTrans){
+        if (!this->m_base.commit()){
+            return (false);
+        }
+    }
+    return (true);
+}//maintains_values
+
+bool DBStatHelper::find_value(DBStatValue &cur){
+    IntType nId = cur.id();
+    if (nId != 0){
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_VALUE_BY_ID)){
+            return (false);
+        }
+        q.bindValue(":id",nId);
+        if (!q.exec()){
+            return (false);
+        }
+        if (q.next()){
+            this->read_value(q,cur);
+            return (true);
+        }
+    }
+    IntType nVarId = cur.variable_id();
+    IntType nIndId = cur.indiv_id();
+    if ((nVarId != 0) && (nIndId != 0)) {
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_VALUES_BY_VARIABLE_INDIV)){
+            return (false);
+        }
+        q.bindValue(":varid", nVarId);
+        q.bindValue(":indid",nIndId);
+        if (!q.exec()){
+            return (false);
+        }
+        if (q.next()){
+            this->read_value(q,cur);
+            return (true);
+        }
+    }
+    return (false);
+}//find_value
+/////////////////////////////// INDIVS ///////////////
+bool DBStatHelper::find_dataset_indivs_count(const DBStatDataset &oSet,int &nCount){
+    DBStatDataset xSet(oSet);
+    nCount = 0;
+    if (!this->find_dataset(xSet)){
+        return (false);
+    }
+    IntType nDatasetId = xSet.id();
+    Q_ASSERT(nDatasetId != 0);
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_FIND_DATASET_INDIVS_COUNT)){
+        return (false);
+    }
+    q.bindValue(":datasetid",nDatasetId);
+    if (!q.exec()){
+        return (false);
+    }
+    if (q.next()){
+        nCount = q.value(0).toInt();
+    }
+    return (true);
+}//find_dataset_indivs_count
+
+bool DBStatHelper::maintains_indivs(const QList<DBStatIndiv> &oInds,
+                                    bool bCommit /*= true*/,
+                                    bool bRemove /*= false*/){
+    bool bInTrans = false;
+    if (bCommit){
+        bInTrans = this->m_base.transaction();
+    }
+    //
+    QSqlQuery qInsert(this->m_base);
+    QSqlQuery qUpdate(this->m_base);
+    QSqlQuery qRemove(this->m_base);
+    //
+    if (bRemove){
+        if (!qRemove.prepare(SQL_REMOVE_INDIV)){
+            if (bCommit && bInTrans){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+    } else {
+        bool bRet = qInsert.prepare(SQL_INSERT_INDIV) &&
+                qUpdate.prepare(SQL_UPDATE_INDIV);
+        if (!bRet){
+            if (bCommit && bInTrans){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+    }
+    //
+    Q_FOREACH(const DBStatIndiv &oInd,oInds)
+    {
+        DBStatIndiv xInd(oInd);
+        this->find_indiv(xInd);
+        IntType nId = xInd.id();
+        if (bRemove){
+            if (nId != 0){
+                qRemove.bindValue(":id",nId);
+                if (!qRemove.exec()){
+                    if (bCommit && bInTrans){
+                        this->m_base.rollback();
+                    }
+                    return (false);
+                }
+            }// nId
+        } else if (oInd.is_writeable()){
+            QString sigle = oInd.sigle();
+            QString name = oInd.name();
+            QString desc = oInd.description();
+            QString status = oInd.status();
+            IntType nDatasetId = oInd.dataset_id();
+            if (nId != 0){
+                qUpdate.bindValue(":sigle",sigle);
+                qUpdate.bindValue(":name",name);
+                qUpdate.bindValue(":desc",desc);
+                qUpdate.bindValue(":status",status);
+                qUpdate.bindValue(":id",nId);
+                if (!qUpdate.exec()){
+                    if (bCommit && bInTrans){
+                        this->m_base.rollback();
+                    }
+                    return (false);
+                }
+            } else {
+                qInsert.bindValue(":datasetid",nDatasetId);
+                qInsert.bindValue(":sigle",sigle);
+                qInsert.bindValue(":name",name);
+                qInsert.bindValue(":desc",desc);
+                qInsert.bindValue(":status",status);
+                if (!qInsert.exec()){
+                    if (bCommit && bInTrans){
+                        this->m_base.rollback();
+                    }
+                    return (false);
+                }
+            }
+        }
+    }// oInd
+    //
+    if (bCommit && bInTrans){
+        if (!this->m_base.commit()){
+            return (false);
+        }
+    }
+    return (true);
+}//maintains_indivs
+
+bool DBStatHelper::find_dataset_indivs_ids(const DBStatDataset &oSet, QList<IntType> &oList,
+                                           int skip /*=0*/,int count /*=100*/){
+    oList.clear();
+    if (skip < 0){
+        skip = 0;
+    }
+    if (count < 1){
+        count = 100;
+    }
+    DBStatDataset xSet(oSet);
+    if (!this->find_dataset(xSet)){
+        return (false);
+    }
+    IntType nDatasetId = xSet.id();
+    Q_ASSERT(nDatasetId != 0);
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_GET_DATASET_INDIV_IDS)){
+        return (false);
+    }
+    q.bindValue(":datasetid",nDatasetId);
+    q.bindValue(":taken",count);
+    q.bindValue(":skip",skip);
+    if (!q.exec()){
+        return (false);
+    }
+    while (q.next()){
+        IntType nId = q.value(0).toInt();
+        oList.append(nId);
+    }
+    return (true);
+}//find_dataset_indivs_ids
+bool DBStatHelper::find_dataset_indivs(const DBStatDataset &oSet,
+                                       QList<DBStatIndiv> &oList,
+                                       int skip /*=0*/,int count /*=100*/){
+    oList.clear();
+    if (skip < 0){
+        skip = 0;
+    }
+    if (count < 1){
+        count = 100;
+    }
+    DBStatDataset xSet(oSet);
+    if (!this->find_dataset(xSet)){
+        return (false);
+    }
+    IntType nDatasetId = xSet.id();
+    Q_ASSERT(nDatasetId != 0);
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_FIND_DATASET_INDIVS)){
+        return (false);
+    }
+    q.bindValue(":datasetid",nDatasetId);
+    q.bindValue(":taken",count);
+    q.bindValue(":skip",skip);
+    if (!q.exec()){
+        return (false);
+    }
+    while (q.next()){
+        DBStatIndiv cur;
+        this->read_indiv(q,cur);
+        oList.append(cur);
+    }
+    return (true);
+}//find_dataset_indivs
 ////////////////////////////////////
-/// \brief DBStatHelper::find_dataset
-/// \param cur
-/// \return
+bool DBStatHelper::find_indiv(DBStatIndiv &cur){
+    IntType nId = cur.id();
+    if (nId != 0){
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_INDIV_BY_ID)){
+            return (false);
+        }
+        q.bindValue(":id",nId);
+        if (!q.exec()){
+            return (false);
+        }
+        if (q.next()){
+            this->read_indiv(q,cur);
+            return (true);
+        }
+    }
+    QString sigle = cur.sigle();
+    IntType nDatasetId = cur.dataset_id();
+    if ((!sigle.isEmpty()) && (!sigle.isNull()) && (nDatasetId != 0)) {
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_INDIV_BY_DATASET_AND_SIGLE)){
+            return (false);
+        }
+        q.bindValue(":datasetid", nDatasetId);
+        q.bindValue(":sigle",sigle);
+        if (!q.exec()){
+            return (false);
+        }
+        if (q.next()){
+            this->read_indiv(q,cur);
+            return (true);
+        }
+    }
+    return (false);
+}//find_indiv
+////////////////////////////// VARIABLES /////
+bool DBStatHelper::find_dataset_variables_count(const DBStatDataset &oSet,int &nCount){
+    DBStatDataset xSet(oSet);
+    nCount = 0;
+    if (!this->find_dataset(xSet)){
+        return (false);
+    }
+    IntType nDatasetId = xSet.id();
+    Q_ASSERT(nDatasetId != 0);
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_FIND_DATASET_VARIABLES_COUNT)){
+        return (false);
+    }
+    q.bindValue(":datasetid",nDatasetId);
+    if (!q.exec()){
+        return (false);
+    }
+    if (q.next()){
+        nCount = q.value(0).toInt();
+    }
+    return (true);
+}//find_dataset_variables_count
+
+bool DBStatHelper::maintains_variables(const QList<DBStatVariable> &oVars,
+                                       bool bCommit /*= true*/,
+                                       bool bRemove /*= false*/){
+    bool bInTrans = false;
+    if (bCommit){
+        bInTrans = this->m_base.transaction();
+    }
+    //
+    QSqlQuery qInsert(this->m_base);
+    QSqlQuery qUpdate(this->m_base);
+    QSqlQuery qRemove(this->m_base);
+    //
+    if (bRemove){
+        if (!qRemove.prepare(SQL_REMOVE_VARIABLE)){
+            if (bCommit && bInTrans){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+    } else {
+        bool bRet = qInsert.prepare(SQL_INSERT_VARIABLE) &&
+                qUpdate.prepare(SQL_UPDATE_VARIABLE);
+        if (!bRet){
+            if (bCommit && bInTrans){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+    }
+    //
+    Q_FOREACH(const DBStatVariable &oVar,oVars)
+    {
+        DBStatVariable xVar(oVar);
+        this->find_variable(xVar);
+        IntType nId = xVar.id();
+        if (bRemove){
+            if (nId != 0){
+                qRemove.bindValue(":id",nId);
+                if (!qRemove.exec()){
+                    if (bCommit && bInTrans){
+                        this->m_base.rollback();
+                    }
+                    return (false);
+                }
+            }// nId
+        } else if (oVar.is_writeable()){
+            QString sigle = oVar.sigle();
+            QString name = oVar.name();
+            QString desc = oVar.description();
+            QString status = oVar.status();
+            IntType nCateg = (oVar.is_categ()) ? 1 : 0;
+            QString vartype = oVar.vartype();
+            QString genre = oVar.genre();
+            IntType nDatasetId = oVar.dataset_id();
+            if (nId != 0){
+                qUpdate.bindValue(":sigle",sigle);
+                qUpdate.bindValue(":vartype",vartype);
+                qUpdate.bindValue(":categ",nCateg);
+                qUpdate.bindValue(":name",name);
+                qUpdate.bindValue(":desc",desc);
+                qUpdate.bindValue(":genre",genre);
+                qUpdate.bindValue(":status",status);
+                qUpdate.bindValue(":id",nId);
+                if (!qUpdate.exec()){
+                    if (bCommit && bInTrans){
+                        this->m_base.rollback();
+                    }
+                    return (false);
+                }
+            } else {
+                qInsert.bindValue(":datasetid",nDatasetId);
+                qInsert.bindValue(":sigle",sigle);
+                qInsert.bindValue(":vartype",vartype);
+                qInsert.bindValue(":categ",nCateg);
+                qInsert.bindValue(":name",name);
+                qInsert.bindValue(":desc",desc);
+                qInsert.bindValue(":genre",genre);
+                qInsert.bindValue(":status",status);
+                if (!qInsert.exec()){
+                    if (bCommit && bInTrans){
+                        this->m_base.rollback();
+                    }
+                    return (false);
+                }
+            }
+        }
+    }// oVar
+    //
+    if (bCommit && bInTrans){
+        if (!this->m_base.commit()){
+            return (false);
+        }
+    }
+    return (true);
+}//maintains_variables
+
+bool DBStatHelper::find_dataset_variables_ids(const DBStatDataset &oSet, QList<IntType> &oList,
+                                              int skip /*=0*/,int count /*=100*/){
+    oList.clear();
+    if (skip < 0){
+        skip = 0;
+    }
+    if (count < 1){
+        count = 100;
+    }
+    DBStatDataset xSet(oSet);
+    if (!this->find_dataset(xSet)){
+        return (false);
+    }
+    IntType nDatasetId = xSet.id();
+    Q_ASSERT(nDatasetId != 0);
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_FIND_DATASET_VARIABLES_IDS)){
+        return (false);
+    }
+    q.bindValue(":datasetid",nDatasetId);
+    q.bindValue(":taken",count);
+    q.bindValue(":skip",skip);
+    if (!q.exec()){
+        return (false);
+    }
+    while (q.next()){
+        IntType nId = q.value(0).toInt();
+        oList.append(nId);
+    }
+    return (true);
+}//find_dataset_variables_ids
+
+bool DBStatHelper::find_dataset_variables(const DBStatDataset &oSet, QList<DBStatVariable> &oList,
+                                          int skip /*=0*/,int count /*=100*/){
+    oList.clear();
+    if (skip < 0){
+        skip = 0;
+    }
+    if (count < 1){
+        count = 100;
+    }
+    DBStatDataset xSet(oSet);
+    if (!this->find_dataset(xSet)){
+        return (false);
+    }
+    IntType nDatasetId = xSet.id();
+    Q_ASSERT(nDatasetId != 0);
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_FIND_DATASET_VARIABLES)){
+        return (false);
+    }
+    q.bindValue(":datasetid",nDatasetId);
+    q.bindValue(":taken",count);
+    q.bindValue(":skip",skip);
+    if (!q.exec()){
+        return (false);
+    }
+    while (q.next()){
+        DBStatVariable cur;
+        this->read_variable(q,cur);
+        oList.append(cur);
+    }
+    return (true);
+}//find_dataset_variables
+
+////////////////////////////////////
+bool DBStatHelper::find_variable(DBStatVariable &cur){
+    IntType nId = cur.id();
+    if (nId != 0){
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_VARIABLE_BY_ID)){
+            return (false);
+        }
+        q.bindValue(":id",nId);
+        if (!q.exec()){
+            return (false);
+        }
+        if (q.next()){
+            this->read_variable(q,cur);
+            return (true);
+        }
+    }
+    QString sigle = cur.sigle();
+    IntType nDatasetId = cur.dataset_id();
+    if ((!sigle.isEmpty()) && (!sigle.isNull()) && (nDatasetId != 0)) {
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_VARIABLE_BY_DATASET_AND_SIGLE)){
+            return (false);
+        }
+        q.bindValue(":datasetid", nDatasetId);
+        q.bindValue(":sigle",sigle);
+        if (!q.exec()){
+            return (false);
+        }
+        if (q.next()){
+            this->read_variable(q,cur);
+            return (true);
+        }
+    }
+    return (false);
+}//find_variable
+
+/////////////////////////////////////////////////////
 bool DBStatHelper::remove_dataset(const DBStatDataset &cur){
     DBStatDataset xSet(cur);
     if (!this->find_dataset(xSet)){
@@ -93,6 +894,22 @@ bool DBStatHelper::remove_dataset(const DBStatDataset &cur){
     bool bInTrans = this->m_base.transaction();
     IntType nId = xSet.id();
     Q_ASSERT(nId != 0);
+    {
+        QSqlQuery qq(this->m_base);
+        if (!qq.prepare(SQL_REMOVE_VARIABLE)){
+            if (bInTrans){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+        qq.bindValue(":id",nId);
+        if (!qq.exec()){
+            if (bInTrans){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+    }// variables
     QSqlQuery q(this->m_base);
     if (!q.prepare(SQL_REMOVE_DATASET)){
         if (bInTrans){
@@ -201,9 +1018,25 @@ bool DBStatHelper::find_dataset(DBStatDataset &cur){
     }
     return (false);
 }// find_dataset
-bool  DBStatHelper::find_all_datasets(QList<DBStatDataset> &oList){
+bool  DBStatHelper::find_all_datasets(QList<DBStatDataset> &oList,
+                                      int skip /* = 0*/,
+                                      int count /* = 100 */){
     oList.clear();
-    QSqlQuery q(SQL_FIND_ALL_DATASETS,this->m_base);
+    if (skip < 0){
+        skip = 0;
+    }
+    if (count < 1){
+        count = 100;
+    }
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_FIND_ALL_DATASETS)){
+        return (false);
+    }
+    q.bindValue(":taken",count);
+    q.bindValue(":skip",skip);
+    if (!q.exec()){
+        return (false);
+    }
     while (q.next()){
         DBStatDataset cur;
         this->read_dataset(q,cur);
@@ -211,6 +1044,41 @@ bool  DBStatHelper::find_all_datasets(QList<DBStatDataset> &oList){
     }
     return (true);
 }//find_all_datasets
+bool  DBStatHelper::find_all_datasets_ids(QList<IntType> &oList,
+                                          int skip /* = 0*/,
+                                          int count /* = 100 */){
+    oList.clear();
+    if (skip < 0){
+        skip = 0;
+    }
+    if (count < 1){
+        count = 100;
+    }
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_FIND_ALL_DATASETS_IDS)){
+        return (false);
+    }
+    q.bindValue(":taken",count);
+    q.bindValue(":skip",skip);
+    if (!q.exec()){
+        return (false);
+    }
+    while (q.next()){
+        IntType n = q.value(0).toInt();
+        oList.append(n);
+    }
+    return (true);
+}//find_all_datasets_ids
+bool DBStatHelper::find_all_datasets_count(int &nCount){
+    nCount = 0;
+    QSqlQuery q(SQL_FIND_DATASETS_COUNT,this->m_base);
+    if (q.next()){
+        nCount = q.value(0).toInt();
+    } else {
+        return (false);
+    }
+    return (true);
+}//find_dataset_variables_count
 ////////////////////////////////////
 void DBStatHelper::read_dataset(QSqlQuery &q, DBStatDataset &cur){
     IntType nId = q.value(0).toInt();
