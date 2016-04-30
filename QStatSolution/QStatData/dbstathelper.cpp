@@ -106,7 +106,7 @@ static const char *SQL_VARIABLE_BY_DATASET_AND_SIGLE =
         " FROM dbvariable WHERE datasetid = :datasetid AND UPPER(LTRIM(RTRIM(sigle))) = :sigle";
 static const char *SQL_INSERT_VARIABLE =
         "INSERT INTO dbvariable (datasetid,sigle,vartype,categvar,nom,description,genre,status)"
-        " VALUES (:datsetid,:sigle,:vartype,:categ,:name,:desc,:genre,:status)";
+        " VALUES (:datasetid,:sigle,:vartype,:categ,:name,:desc,:genre,:status)";
 static const char *SQL_UPDATE_VARIABLE =
         "UPDATE dbvariable SET optlock = optlock + 1,"
         " sigle = :sigle, vartype = :vartype, categvar = :categ, nom = :name, description = :desc, genre = :genre, status = :status WHERE variableid = :id";
@@ -149,7 +149,7 @@ static const char *SQL_VALUES_BY_VARIABLE_INDIV =
         " FROM dbvalue WHERE variableid = :varid AND individ = :indid";
 static const char *SQL_INSERT_VALUE =
         "INSERT INTO dbvalue (variableid,individ,stringval,status)"
-        " VALUES(:varid,:indif,:stringval,:status)";
+        " VALUES(:varid,:indid,:stringval,:status)";
 static const char *SQL_UPDATE_VALUE =
         "UPDATE dbvalue SET optlock = optlock + 1,"
         " stringval = :stringval, status = :status WHERE valueid = :id ";
@@ -1127,10 +1127,11 @@ void DBStatHelper::read_value(QSqlQuery &q, DBStatValue &cur){
     cur = DBStatValue(nId,nVersion,status,nVarId,nIndId,v);
 }
 ////////////////////////////////
-DBStatHelper::DBStatHelper(const QString &baseType /*= DEFAULT_DATABASE_TYPE*/,
+DBStatHelper::DBStatHelper(QObject *parent /*= 0*/,
                            const QString &sDatabaseName /* = DEFAULT_DATABASE_NAME*/,
-                           const QString &ConnectionName  /*= DEFAULT_CONNECTION_NAME*/,
-                           QObject *parent /*= 0*/) : QObject(parent)
+                           const QString &baseType /*= DEFAULT_DATABASE_TYPE*/,
+                           const QString &ConnectionName  /*= DEFAULT_CONNECTION_NAME*/
+                           ) : QObject(parent)
 {
     this->m_base = QSqlDatabase::addDatabase(baseType,ConnectionName);
     Q_ASSERT(this->m_base.isValid());

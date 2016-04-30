@@ -17,25 +17,29 @@ private:
     QSqlDatabase m_base;
     //
     void check_schema(void);
-    //
-    static const QString DEFAULT_DATABASE_TYPE;
-    static const QString DEFAULT_CONNECTION_NAME;
-    static const QString DEFAULT_DATABASE_NAME;
-    //
     void read_dataset(QSqlQuery &q, DBStatDataset &cur);
     void read_variable(QSqlQuery &q, DBStatVariable &cur);
     void read_indiv(QSqlQuery &q, DBStatIndiv &cur);
     void read_value(QSqlQuery &q, DBStatValue &cur);
 public:
-    explicit DBStatHelper(const QString &baseType = DEFAULT_DATABASE_TYPE,
+    static const QString DEFAULT_DATABASE_TYPE;
+    static const QString DEFAULT_CONNECTION_NAME;
+    static const QString DEFAULT_DATABASE_NAME;
+public:
+    explicit DBStatHelper(QObject *parent = 0,
                           const QString &sDatabaseName = DEFAULT_DATABASE_NAME,
-                          const QString &ConnectionName  = DEFAULT_CONNECTION_NAME,
-                          QObject *parent = 0);
+                          const QString &baseType = DEFAULT_DATABASE_TYPE,
+                          const QString &ConnectionName  = DEFAULT_CONNECTION_NAME
+                          );
     explicit DBStatHelper(QSqlDatabase &oBase,QObject *parent = 0);
 
 signals:
 
 public slots:
+    bool isValid(void){
+        return (this->m_base.isValid()) && (this->m_base.isOpen());
+    }
+
     bool find_all_datasets_count(int &nCount);
     bool find_all_datasets(QList<DBStatDataset> &oList, int skip = 0,int count = 100);
     bool find_all_datasets_ids(QList<IntType> &oList, int skip = 0,int count = 100);
