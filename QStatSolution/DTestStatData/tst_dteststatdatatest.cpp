@@ -14,24 +14,28 @@ class DTestStatDataTest : public QObject
     Q_OBJECT
 private:
     DBStatHelper *m_pHelper;
+    //
     static void import_dataset(DBStatHelper *pMan,
-                        QString &name, int nRows, int nCols,
-                        QVector<int> &data,
-                        QVector<QString> &indNames,
-                        QVector<QString> &varNames);
+                               QString &name, int nRows, int nCols,
+                               QVector<int> &data,
+                               QVector<QString> &indNames,
+                               QVector<QString> &varNames);
 public:
     DTestStatDataTest(QObject *pParent = 0);
 
 private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
-    void testCase1();
+    void testCaseDataSet();
+    void testCaseVariables();
+    void testCaseIndivs();
+     void testCaseValues();
 };
 void DTestStatDataTest::import_dataset(DBStatHelper *pMan,
-                        QString &name, int nRows, int nCols,
-                        QVector<int> &data,
-                        QVector<QString> &indNames,
-                        QVector<QString> &varNames){
+                                       QString &name, int nRows, int nCols,
+                                       QVector<int> &data,
+                                       QVector<QString> &indNames,
+                                       QVector<QString> &varNames){
     QVERIFY(pMan != nullptr);
     QVERIFY(pMan->isValid());
     DBStatDataset oSet(name);
@@ -123,15 +127,15 @@ void DTestStatDataTest::initTestCase()
     QVERIFY(pHelper != nullptr);
     QVERIFY(pHelper->isValid());
     this->m_pHelper = pHelper;
-   //
-   QString name;
-   int nRows = 0, nCols = 0;
-   QVector<int> data;
-   QVector<QString> indNames, varNames;
-   InfoTestData::get_mortal_data(name,nRows,nCols,data,indNames,varNames);
-   import_dataset(pHelper,name,nRows,nCols,data,indNames,varNames);
-   InfoTestData::get_conso_data(name,nRows,nCols,data,indNames,varNames);
-   import_dataset(pHelper,name,nRows,nCols,data,indNames,varNames);
+    //
+    QString name;
+    int nRows = 0, nCols = 0;
+    QVector<int> data;
+    QVector<QString> indNames, varNames;
+    InfoTestData::get_mortal_data(name,nRows,nCols,data,indNames,varNames);
+    import_dataset(pHelper,name,nRows,nCols,data,indNames,varNames);
+    InfoTestData::get_conso_data(name,nRows,nCols,data,indNames,varNames);
+    import_dataset(pHelper,name,nRows,nCols,data,indNames,varNames);
 }//initTestCase
 
 void DTestStatDataTest::cleanupTestCase()
@@ -140,11 +144,129 @@ void DTestStatDataTest::cleanupTestCase()
     this->m_pHelper = nullptr;
 }
 
-void DTestStatDataTest::testCase1()
+void DTestStatDataTest::testCaseDataSet()
 {
-    QVERIFY2(true, "Failure");
+    DBStatHelper *pMan = this->m_pHelper;
+    QVERIFY(pMan != nullptr);
+    int nCount = 0;
+    bool bRet = pMan->find_all_datasets_count(nCount);
+    QVERIFY2(bRet,"find_all_datasets_count");
+    QVERIFY2(nCount > 1,"Bad datasets count");
+    //
+    QList<IntType> oIds;
+    bRet = pMan->find_all_datasets_ids(oIds);
+    QVERIFY2(bRet,"find_all_datasets_ids");
+    QVERIFY2(oIds.size()==nCount,"datasets count mismatch");
+    //
+    QList<DBStatDataset> oSets;
+    bRet = pMan->find_all_datasets(oSets);
+    QVERIFY2(bRet,"find_all_datasets");
+    QVERIFY2(oSets.size()==nCount,"datasets count mismatch");
 }
-
+void DTestStatDataTest::testCaseVariables(){
+    DBStatHelper *pMan = this->m_pHelper;
+    QVERIFY(pMan != nullptr);
+    //
+    QString name;
+    InfoTestData::get_mortal_name(name);
+    DBStatDataset oSet(name);
+    bool bRet = pMan->find_dataset(oSet);
+    QVERIFY(bRet);
+    QVERIFY(oSet.id() != 0);
+    int nCount = 0;
+    bRet = pMan->find_dataset_variables_count(oSet,nCount);
+    QVERIFY2(bRet,"find_dataset_variables_count");
+    QVERIFY2(nCount > 0, "Variables count error");
+    //
+    QList<IntType> oIds;
+    bRet = pMan->find_dataset_variables_ids(oSet,oIds,0,nCount);
+    QVERIFY2(bRet,"find_dataset_variables_ids");
+    QVERIFY2(oIds.size() == nCount, "Variables count error");
+    //
+    QList<DBStatVariable> oVars;
+    bRet = pMan->find_dataset_variables(oSet,oVars,0,nCount);
+    QVERIFY2(bRet,"find_dataset_variables");
+    QVERIFY2(oVars.size() == nCount, "Variables count error");
+}//testCaseVariables
+void DTestStatDataTest::testCaseIndivs(){
+    DBStatHelper *pMan = this->m_pHelper;
+    QVERIFY(pMan != nullptr);
+    //
+    QString name;
+    InfoTestData::get_mortal_name(name);
+    DBStatDataset oSet(name);
+    bool bRet = pMan->find_dataset(oSet);
+    QVERIFY(bRet);
+    QVERIFY(oSet.id() != 0);
+    int nCount = 0;
+    bRet = pMan->find_dataset_indivs_count(oSet,nCount);
+    QVERIFY2(bRet,"find_dataset_indivs_count");
+    QVERIFY2(nCount > 0, "Indivs count error");
+    //
+    QList<IntType> oIds;
+    bRet = pMan->find_dataset_indivs_ids(oSet,oIds,0,nCount);
+    QVERIFY2(bRet,"find_dataset_indivs_ids");
+    QVERIFY2(oIds.size() == nCount, "Indivs count error");
+    //
+    QList<DBStatIndiv> oInds;
+    bRet = pMan->find_dataset_indivs(oSet,oInds,0,nCount);
+    QVERIFY2(bRet,"find_dataset_indivs");
+    QVERIFY2(oInds.size() == nCount, "Variables count error");
+}//testCaseIndivs
+void DTestStatDataTest::testCaseValues(){
+    DBStatHelper *pMan = this->m_pHelper;
+    QVERIFY(pMan != nullptr);
+    //
+    QString name;
+    InfoTestData::get_mortal_name(name);
+    DBStatDataset oSet(name);
+    bool bRet = pMan->find_dataset(oSet);
+    QVERIFY(bRet);
+    QVERIFY(oSet.id() != 0);
+    int nCount = 0;
+    bRet = pMan->find_dataset_values_count(oSet,nCount);
+    QVERIFY2(bRet,"find_dataset_values_count");
+    QVERIFY2(nCount > 0, "values count error");
+    //
+    QList<DBStatValue> oVals;
+    bRet = pMan->find_dataset_values(oSet,oVals,0,nCount);
+    QVERIFY2(bRet,"find_dataset_values");
+    QVERIFY2(oVals.size() == nCount, "Values count error");
+    //
+    QList<DBStatVariable> oVars;
+    bRet = pMan->find_dataset_variables(oSet,oVars);
+    QVERIFY(bRet);
+    int nVars = oVars.size();
+    QVERIFY(nVars > 0);
+    Q_FOREACH(const DBStatVariable &oVar,oVars)
+    {
+        DBStatVariable xVar(oVar);
+        QList<DBStatValue> xVals;
+        bRet = pMan->find_variable_values(xVar,xVals);
+        QVERIFY(bRet);
+        QVERIFY(xVals.size() > 0);
+        //
+         QList<DBStatValue> yVals;
+         bRet = pMan->find_variable_distinct_values(xVar,yVals);
+         QVERIFY(bRet);
+         QVERIFY(yVals.size() > 0);
+    }// oVar
+    //
+    QList<DBStatIndiv> oInds;
+    bRet = pMan->find_dataset_indivs(oSet,oInds);
+    QVERIFY(bRet);
+    int nRows = oInds.size();
+    QVERIFY(nRows > 0);
+    Q_FOREACH(const DBStatIndiv &oInd,oInds)
+    {
+        DBStatIndiv xInd(oInd);
+        QList<DBStatValue> xVals;
+        bRet = pMan->find_indiv_values(xInd,xVals);
+        QVERIFY(bRet);
+        QVERIFY(xVals.size() > 0);
+    }// oVar
+}//testCaseValues
+//
 QTEST_MAIN(DTestStatDataTest)
 
 #include "tst_dteststatdatatest.moc"

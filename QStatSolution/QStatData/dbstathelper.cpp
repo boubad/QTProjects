@@ -67,11 +67,11 @@ static const char *CREATE_SQL[] = {
 static const char *SQL_FIND_ALL_DATASETS_IDS =
         "SELECT datasetid"
         " FROM dbdataset ORDER BY datasetid"
-        " LIMIT ?:taken OFFSET :skip";
+        " LIMIT :taken OFFSET :skip";
 static const char *SQL_FIND_ALL_DATASETS =
         "SELECT datasetid,optlock,sigle,nom,description,status"
         " FROM dbdataset ORDER BY sigle"
-        " LIMIT ?:taken OFFSET :skip";
+        " LIMIT :taken OFFSET :skip";
 static const char *SQL_FIND_DATASET_BY_ID =
         "SELECT datasetid,optlock,sigle,nom,description,status"
         " FROM dbdataset WHERE datasetid = :id";
@@ -120,7 +120,7 @@ static const char *SQL_FIND_DATASET_INDIVS_COUNT =
         " WHERE datasetid = :datasetid";
 static const char *SQL_GET_DATASET_INDIV_IDS =
         "SELECT individ FROM dbindiv"
-        " WHERE datasetid = ?1 ORDER BY individ ASC"
+        " WHERE datasetid = :datasetid ORDER BY individ ASC"
         " LIMIT :taken OFFSET :skip";
 static const char *SQL_FIND_DATASET_INDIVS =
         "SELECT individ,optlock,datasetid,sigle,nom,description,status"
@@ -163,18 +163,120 @@ static const char *SQL_FIND_DATASET_VALUES =
         " FROM dbvalue a, dbvariable b"
         " WHERE a.variableid = b.variableid AND b.datasetid = :datasetid"
         " ORDER BY a.variableid ASC, a.individ ASC"
-        " LIMIT ?:taken OFFSET :skip";
+        " LIMIT :taken OFFSET :skip";
 static const char *SQL_VALUES_BY_VARIABLEID =
         "SELECT valueid,optlock,variableid,individ,stringval,status"
         " FROM dbvalue WHERE variableid = :varid"
-        " LIMIT ?:taken OFFSET :skip";
+        " LIMIT :taken OFFSET :skip";
 static const char *SQL_VALUES_BY_INDIVID =
         "SELECT valueid,optlock,variableid,individ,stringval,status"
         " FROM dbvalue WHERE individ = :indid"
-        " LIMIT ?:taken OFFSET :skip";
+        " LIMIT :taken OFFSET :skip";
 static const char *SQL_VARIABLE_VALUES_DISTINCT =
         "SELECT DISTINCT stringval FROM dbvalue WHERE variableid = :varid"
-        " LIMIT ?:taken OFFSET :skip";
+        " LIMIT :taken OFFSET :skip";
+static const char *SQL_DELETE_VARIABLE_VALUES =
+        "DELETE FROM dbvalue where variableid = :varid";
+static const char *SQL_DELETE_INDIV_VALUES =
+        "DELETE FROM dbvalue where individ = :indid";
+///////////////////////////////////////
+bool DBStatHelper::remove_indiv(const DBStatIndiv &oInd, bool bCommit /*= true*/){
+    IntType nIndId = oInd.id();
+    if (nIndId == 0){
+        return (false);
+    }
+    bool bInTrans = false;
+    if (bCommit){
+        bInTrans = this->m_base.transaction();
+    }
+    {
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_DELETE_INDIV_VALUES)){
+            if (bInTrans && bCommit){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+        q.bindValue(":indid",nIndId);
+        if (!q.exec()){
+            if (bInTrans && bCommit){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+    }
+    {
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_REMOVE_INDIV)){
+            if (bInTrans && bCommit){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+        q.bindValue(":id",nIndId);
+        if (!q.exec()){
+            if (bInTrans && bCommit){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+    }
+    if (bInTrans){
+        if (!this->m_base.commit()){
+            return (false);
+        }
+    }
+    return (true);
+}//remove_indiv
+bool DBStatHelper::remove_variable(const DBStatVariable &oVar, bool bCommit /*= true*/){
+    IntType nVarId = oVar.id();
+    if (nVarId == 0){
+        return (false);
+    }
+    bool bInTrans = false;
+    if (bCommit){
+        bInTrans = this->m_base.transaction();
+    }
+    {
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_DELETE_VARIABLE_VALUES)){
+            if (bInTrans && bCommit){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+        q.bindValue(":varid",nVarId);
+        if (!q.exec()){
+            if (bInTrans && bCommit){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+    }
+    {
+        QSqlQuery q(this->m_base);
+        if (!q.prepare(SQL_REMOVE_VARIABLE)){
+            if (bInTrans && bCommit){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+        q.bindValue(":id",nVarId);
+        if (!q.exec()){
+            if (bInTrans && bCommit){
+                this->m_base.rollback();
+            }
+            return (false);
+        }
+    }
+    if (bInTrans){
+        if (!this->m_base.commit()){
+            return (false);
+        }
+    }
+    return (true);
+}//remove_variable
+
 //////////////////// VALUES /////////////////////
 bool  DBStatHelper::find_dataset_values_count(const DBStatDataset &oSet, int &nCount){
     DBStatDataset xSet(oSet);
@@ -886,29 +988,73 @@ bool DBStatHelper::find_variable(DBStatVariable &cur){
 }//find_variable
 
 /////////////////////////////////////////////////////
-bool DBStatHelper::remove_dataset(const DBStatDataset &cur){
+bool DBStatHelper::remove_dataset(const DBStatDataset &cur,
+                                  bool bCommit /*= true*/){
     DBStatDataset xSet(cur);
     if (!this->find_dataset(xSet)){
         return (false);
     }
-    bool bInTrans = this->m_base.transaction();
+    bool bInTrans = false;
+    if (bCommit){
+        bInTrans = this->m_base.transaction();
+    }
     IntType nId = xSet.id();
     Q_ASSERT(nId != 0);
     {
-        QSqlQuery qq(this->m_base);
-        if (!qq.prepare(SQL_REMOVE_VARIABLE)){
+        int nCount = 0;
+        if (!this->find_dataset_indivs_count(xSet,nCount)){
             if (bInTrans){
                 this->m_base.rollback();
             }
             return (false);
         }
-        qq.bindValue(":id",nId);
-        if (!qq.exec()){
+        if (nCount > 0){
+            QList<IntType> oIds;
+            if (!this->find_dataset_indivs_ids(xSet,oIds,0,nCount)){
+                if (bInTrans){
+                    this->m_base.rollback();
+                }
+                return (false);
+            }
+            Q_FOREACH(IntType nIndId,oIds)
+            {
+                DBStatIndiv xInd(nIndId);
+                if (!this->remove_indiv(xInd,false)){
+                    if (bInTrans){
+                        this->m_base.rollback();
+                    }
+                    return (false);
+                }
+            }
+        }// nCount
+    }// indivs
+    {
+        int nCount = 0;
+        if (!this->find_dataset_variables_count(xSet,nCount)){
             if (bInTrans){
                 this->m_base.rollback();
             }
             return (false);
         }
+        if (nCount > 0){
+            QList<IntType> oIds;
+            if (!this->find_dataset_variables_ids(xSet,oIds,0,nCount)){
+                if (bInTrans){
+                    this->m_base.rollback();
+                }
+                return (false);
+            }
+            Q_FOREACH(IntType nVarId,oIds)
+            {
+                DBStatVariable xInd(nVarId);
+                if (!this->remove_variable(xInd,false)){
+                    if (bInTrans){
+                        this->m_base.rollback();
+                    }
+                    return (false);
+                }
+            }
+        }// nCount
     }// variables
     QSqlQuery q(this->m_base);
     if (!q.prepare(SQL_REMOVE_DATASET)){
@@ -925,10 +1071,12 @@ bool DBStatHelper::remove_dataset(const DBStatDataset &cur){
         return (false);
     }
     if (bInTrans){
-        this->m_base.commit();
+        if (!this->m_base.commit()){
+            return (false);
+        }
     }
     return (true);
-}
+}// remove_dataset
 
 bool DBStatHelper::maintains_dataset(DBStatDataset &cur){
     if (!cur.is_writeable()){

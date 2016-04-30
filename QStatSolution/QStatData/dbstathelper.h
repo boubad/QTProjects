@@ -45,7 +45,7 @@ public slots:
     bool find_all_datasets_ids(QList<IntType> &oList, int skip = 0,int count = 100);
     bool find_dataset(DBStatDataset &cur);
     bool maintains_dataset(DBStatDataset &cur);
-    bool remove_dataset(const DBStatDataset &cur);
+    bool remove_dataset(const DBStatDataset &cur, bool bCommit = true);
     //
     bool find_dataset_variables_count(const DBStatDataset &oSet, int &nCount);
     bool find_dataset_variables_ids(const DBStatDataset &oSet, QList<IntType> &oList,
@@ -56,6 +56,7 @@ public slots:
     bool find_variable(DBStatVariable &cur);
     bool maintains_variables(const QList<DBStatVariable> &oVars,bool bCommit = true,
                              bool bRemove = false);
+    bool remove_variable(const DBStatVariable &oVar, bool bCommit = true);
     //
     bool find_dataset_indivs_count(const DBStatDataset &oSet, int &nCount);
     bool find_dataset_indivs_ids(const DBStatDataset &oSet, QList<IntType> &oList,
@@ -66,6 +67,7 @@ public slots:
     bool find_indiv(DBStatIndiv &cur);
     bool maintains_indivs(const QList<DBStatIndiv> &oInds,bool bCommit = true,
                              bool bRemove = false);
+    bool remove_indiv(const DBStatIndiv &oInd, bool bCommit = true);
     //
     bool find_value(DBStatValue &cur);
     bool maintains_values(const QList<DBStatValue> &oVals,bool bCommit = true,
