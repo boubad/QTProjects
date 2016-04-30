@@ -13,10 +13,12 @@ TEMPLATE = lib
 CONFIG += staticlib
 
 SOURCES += qstatdata.cpp \
-    dbstathelper.cpp
+    dbstathelper.cpp \
+    qindiv.cpp
 
 HEADERS += qstatdata.h \
-    dbstathelper.h
+    dbstathelper.h \
+    qindiv.h
 unix {
     target.path = /usr/lib
     INSTALLS += target
