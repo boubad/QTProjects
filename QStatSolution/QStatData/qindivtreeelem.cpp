@@ -99,14 +99,15 @@ void QIndivTree::aggreg_one_step(int &nOrder){
     vn.push_back(pn);
     this->m_elems = vn;
 }//aggreg_one_step
-void QIndivTree::aggreg(int nbClasses){
+void QIndivTree::doWork(int nbClasses){
     Q_ASSERT(nbClasses > 0);
-    emit aggreg_started();
     int nOrder = 0;
     while (this->m_elems.size() > nbClasses){
         this->aggreg_one_step(nOrder);
     }
-    emit aggreg_terminated();
+    this->get_indivs_ids(this->m_ids);
+    QAggregResult r(this->m_ids);
+    emit resultReady(r);
 }//aggreg
  void QIndivTree::get_indivs_ids(QMap<int,QVector<IntType> > oIds) const{
      oIds.clear();

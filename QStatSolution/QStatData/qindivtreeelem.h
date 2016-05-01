@@ -5,6 +5,8 @@
 #include <QMap>
 #include <QVariant>
 #include <QVector>
+#include <QSharedData>
+#include <QSharedDataPointer>
 /////////////////////////////
 namespace info {
 class QIndivTree;
@@ -55,26 +57,71 @@ public slots:
 
 };
 ///////////////////////////////////////////
+class QAggregResultData : public QSharedData {
+public:
+     QAggregResultData(){}
+     QAggregResultData(const QAggregResultData &other):QSharedData(other),m_data(other.m_data){}
+
+    ~QAggregResultData(){}
+     const  QMap<int,QVector<IntType> > &data(void) const {
+         return this->m_data;
+     }
+     void data( const QMap<int,QVector<IntType> > &d){
+         this->m_data = d;
+     }
+private:
+     QMap<int,QVector<IntType> > m_data;
+};
+class QAggregResult {
+public:
+    QAggregResult(){
+        d = new QAggregResultData();
+    }
+    QAggregResult(const  QMap<int,QVector<IntType> > v ){
+        d = new QAggregResultData();
+        d->data(v);
+    }
+    QAggregResult(const QAggregResult &other):d(other.d){}
+    QAggregResult & operator=(const QAggregResult &other){
+        if (this != &other){
+            this->d = other.d;
+        }
+        return (*this);
+    }
+    ~QAggregResult(){}
+    const  QMap<int,QVector<IntType> > &data(void) const {
+        return this->d->data();
+    }
+    void data( const QMap<int,QVector<IntType> > &dx){
+        this->d->data(dx);
+    }
+private:
+    QSharedDataPointer<QAggregResultData> d;
+};
+
+///////////////////////////////////////////
 class QIndivTree : public QObject {
     Q_OBJECT
 private:
     QVector<QIndivTreeElem *> m_elems;
     QVector<double> m_dists;
+    QMap<int,QVector<IntType> > m_ids;
     //
     void compute_distances(void);
     void find_best_pair(int &i1, int &i2, double &dMin) const;
     void aggreg_one_step(int &nOrder);
+     void get_indivs_ids(QMap<int,QVector<IntType> > oIds) const;
 public:
     QIndivTree(IIndivProvider *pProvider,QObject *parent = 0);
     ~QIndivTree();
-    void aggreg(int nbClasses);
+
     const  QVector<QIndivTreeElem *> & elements(void) const {
         return (this->m_elems);
     }
-    void get_indivs_ids(QMap<int,QVector<IntType> > oIds) const;
-    signals:
-        void aggreg_started(void);
-        void aggreg_terminated(void);
+public slots:
+    void doWork(int nbClasses);
+signals:
+    void resultReady(QAggregResult oIds);
 };// class QInvTree
 
 ///////////////////////////////////////////
