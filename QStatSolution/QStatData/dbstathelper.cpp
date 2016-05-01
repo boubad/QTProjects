@@ -179,7 +179,33 @@ static const char *SQL_DELETE_VARIABLE_VALUES =
         "DELETE FROM dbvalue where variableid = :varid";
 static const char *SQL_DELETE_INDIV_VALUES =
         "DELETE FROM dbvalue where individ = :indid";
+static const char *SQL_FIND_DATASET_VARIABLES_TYPES =
+        "SELECT variableid,vartype FROM dbvariable WHERE datasetid = :datasetid";
 ///////////////////////////////////////
+bool DBStatHelper::find_dataset_variables_types(const DBStatDataset &oSet,QMap<IntType,QString> &oMap){
+    DBStatDataset xSet(oSet);
+    oMap.clear();
+    if (!this->find_dataset(xSet)){
+        return (false);
+    }
+    IntType nDatasetId = xSet.id();
+    Q_ASSERT(nDatasetId != 0);
+    QSqlQuery q(this->m_base);
+    if (!q.prepare(SQL_FIND_DATASET_VARIABLES_TYPES)){
+        return (false);
+    }
+    q.bindValue(":datasetid",nDatasetId);
+    if (!q.exec()){
+        return (false);
+    }
+    while (q.next()){
+        IntType key = q.value(0).toInt();
+        QString val = q.value(1).toString().trimmed().toLower();
+        oMap[key] = val;
+    }
+    return (true);
+}//find_dataset_variables_types
+
 bool DBStatHelper::remove_indiv(const DBStatIndiv &oInd, bool bCommit /*= true*/){
     IntType nIndId = oInd.id();
     if (nIndId == 0){

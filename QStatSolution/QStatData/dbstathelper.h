@@ -6,6 +6,7 @@
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QList>
+#include <QMap>
 ////////////////////////////////
 #include "qstatdata.h"
 //
@@ -47,6 +48,7 @@ public slots:
     bool maintains_dataset(DBStatDataset &cur);
     bool remove_dataset(const DBStatDataset &cur, bool bCommit = true);
     //
+    bool find_dataset_variables_types(const DBStatDataset &oSet,QMap<IntType,QString> &oMap);
     bool find_dataset_variables_count(const DBStatDataset &oSet, int &nCount);
     bool find_dataset_variables_ids(const DBStatDataset &oSet, QList<IntType> &oList,
                                 int skip = 0, int count = 100);

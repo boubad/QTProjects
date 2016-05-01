@@ -136,6 +136,14 @@ bool DBStatVariable::is_writeable(void) const {
     const QString s = this->vartype();
     return ((!s.isNull()) && (!s.isEmpty()) && DBStatDatasetChild::is_writeable());
 }
+bool DBStatVariable::is_numeric(void) const{
+    if (this->is_categ()){
+        return (false);
+    }
+    QString s = this->vartype();
+    return ((s == "double") || (s == "float") || (s =="real") ||
+            (s == "int") || (s == "integer") || (s=="long"));
+}
 void DBStatVariable::swap(DBStatVariable &other) {
     DBStatVariable t(*this);
     *this = other;

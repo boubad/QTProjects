@@ -29,7 +29,7 @@ private Q_SLOTS:
     void testCaseDataSet();
     void testCaseVariables();
     void testCaseIndivs();
-     void testCaseValues();
+    void testCaseValues();
 };
 void DTestStatDataTest::import_dataset(DBStatHelper *pMan,
                                        QString &name, int nRows, int nCols,
@@ -173,6 +173,12 @@ void DTestStatDataTest::testCaseVariables(){
     bool bRet = pMan->find_dataset(oSet);
     QVERIFY(bRet);
     QVERIFY(oSet.id() != 0);
+    //
+    QMap<IntType,QString> oMap;
+    bRet = pMan->find_dataset_variables_types(oSet,oMap);
+    QVERIFY2(bRet,"find_dataset_variables_types");
+    QVERIFY2(!oMap.empty(), "Variables types count error");
+    //
     int nCount = 0;
     bRet = pMan->find_dataset_variables_count(oSet,nCount);
     QVERIFY2(bRet,"find_dataset_variables_count");
@@ -246,10 +252,10 @@ void DTestStatDataTest::testCaseValues(){
         QVERIFY(bRet);
         QVERIFY(xVals.size() > 0);
         //
-         QList<DBStatValue> yVals;
-         bRet = pMan->find_variable_distinct_values(xVar,yVals);
-         QVERIFY(bRet);
-         QVERIFY(yVals.size() > 0);
+        QList<DBStatValue> yVals;
+        bRet = pMan->find_variable_distinct_values(xVar,yVals);
+        QVERIFY(bRet);
+        QVERIFY(yVals.size() > 0);
     }// oVar
     //
     QList<DBStatIndiv> oInds;

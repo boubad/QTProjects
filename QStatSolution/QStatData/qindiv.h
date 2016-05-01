@@ -2,51 +2,94 @@
 #define QINDIV_H
 #include "qstatdata.h"
 /////////////////////
-#include <QObject>
 #include <QMap>
+#include <QVector>
 #include <QVariant>
+#include <QSharedData>
+#include <QSharedDataPointer>
 ///////////////////////
 /// \brief The QIndiv class
 namespace info {
-class QIndiv : public QObject
-{
-    Q_OBJECT
+//////////////////////////////////
+class IndivData : public QSharedData {
 public:
-    explicit QIndiv(QObject *parent = 0);
-    explicit QIndiv(const DBStatIndiv &oInd, QObject *parent = 0);
-
-signals:
-
-public slots:
-    inline IntType id(void) const {
+    IndivData(){}
+    IndivData(const DBStatIndiv &oInd,const QMap<IntType,QVariant> &oMap):
+    m_inddata(oInd),m_data(oMap){
+    }
+    IndivData(const IndivData &other):QSharedData(other),
+        m_inddata(other.m_inddata),m_data(other.m_data){}
+    ~IndivData(){}
+public:
+    IntType id(void) const {
         return (this->m_inddata.id());
     }
-    inline IntType version(void) const {
+    IntType version(void) const {
         return (this->m_inddata.version());
     }
-    inline const QString & sigle(void) const {
+    QString  sigle(void) const {
         return (this->m_inddata.sigle());
     }
-    inline const QString & name(void) const {
+    QString  name(void) const {
         return (this->m_inddata.name());
     }
-    inline const QString & description(void) const {
+    QString  description(void) const {
         return (this->m_inddata.description());
     }
-    inline const QString & status(void) const {
+   QString  status(void) const {
         return (this->m_inddata.status());
     }
-    inline const QMap<IntType,QVariant> & data(void) const {
+   QMap<IntType,QVariant>  data(void) const {
         return (this->m_data);
     }
-    inline void data(const QMap<IntType,QVariant> &oMap){
+    void data(const QMap<IntType,QVariant> &oMap){
         this->m_data = oMap;
     }
-
 private:
     DBStatIndiv m_inddata;
     QMap<IntType,QVariant> m_data;
+};// class IndivData
+
+//////////////////////////////////
+class QIndiv {
+public:
+    QIndiv();
+    QIndiv(const DBStatIndiv &oInd,const  QMap<IntType,QVariant> &oMap);
+    QIndiv(const QIndiv &other);
+    QIndiv & operator=(const QIndiv &other);
+    ~QIndiv();
+public:
+    IntType id(void) const;
+    IntType version(void) const;
+    QString  sigle(void) const;
+    QString  name(void) const;
+    QString  description(void) const;
+    QString  status(void) const;
+    QMap<IntType,QVariant>  data(void) const;
+    void data(const QMap<IntType,QVariant> &oMap);
+public:
+    double distance(const QIndiv &other) const;
+private:
+    QSharedDataPointer<IndivData> d;
 };
+//////////////////////////////////////////////////
+class IIndivProvider {
+public:
+    virtual bool is_valid(void) = 0;
+    virtual bool indivs_count(int &nCount) = 0;
+    virtual bool all_indivs_ids(QVector<IntType> &oIds) = 0;
+    virtual bool contains_id(const IntType aId) = 0;
+    virtual bool find_indiv(const IntType aIndex,QIndiv &oInd,
+                            const VariableMode mode = VariableMode::modeAll) = 0;
+    virtual bool find_indiv_at(const int pos,QIndiv &oInd,
+                                const VariableMode mode = VariableMode::modeAll) = 0;
+    virtual bool distance(const IntType aIndex1, const IntType &Index2,
+                          double &dRes) = 0;
+    virtual bool distance_at(const int pos1, const int pos2,
+                          double &dRes) = 0;
+}; // class IIndivProvider
+
+///////////////////////////////////////////////////
 }// namespace info
 
 

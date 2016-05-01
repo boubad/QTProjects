@@ -8,6 +8,9 @@ namespace info {
 //////////////////////////////////////////
 typedef int IntType;
 class DBStatHelper;
+class QDBIndivProvider;
+/////////////////////////////////////////
+enum class VariableMode {modeInvalid, modeNumeric, modeNominal, modeAll};
 ///////////////////////////////////////////
 class StatBaseItem {
     friend class DBStatHelper;
@@ -47,7 +50,7 @@ public:
     inline IntType version(void) const {
         return (this->m_version);
     }
-    inline const QString & status(void) const{
+    inline QString  status(void) const{
         return (this->m_status);
     }
     inline void status(const QString &s){
@@ -82,19 +85,19 @@ private:
 public:
     virtual ~StatNamedItem();
 public:
-    inline const QString & sigle(void) const {
+    inline QString  sigle(void) const {
         return (this->m_sigle);
     }
     inline void sigle(const QString &s){
         this->m_sigle = s.trimmed().toUpper();
     }
-    inline const QString & name(void) const {
+    inline QString  name(void) const {
         return (this->m_name);
     }
     inline void name(const QString &s){
         this->m_name = s.trimmed();
     }
-    inline const QString & description(void) const {
+    inline QString  description(void) const {
         return (this->m_desc);
     }
     inline void description(const QString &s){
@@ -181,18 +184,19 @@ public:
     inline void is_categ(const bool b){
         this->m_categ = b;
     }
-    inline const QString & vartype(void) const {
+    inline QString  vartype(void) const {
         return (this->m_type);
     }
     inline void vartype(const QString &s){
         this->m_type = s.trimmed().toLower();
     }
-    inline const QString &genre(void) const {
+    inline QString genre(void) const {
         return (this->m_genre);
     }
     inline void genre(const QString &s){
         this->m_genre = s.trimmed().toUpper();
     }
+    bool is_numeric(void) const;
     virtual bool is_writeable(void) const;
     void swap(DBStatVariable &other);
     virtual QDataStream & write_to(QDataStream &out) const;
@@ -201,6 +205,7 @@ public:
 ///////////////////////////////////////////////////
 class DBStatIndiv : public DBStatDatasetChild {
     friend class DBStatHelper;
+    friend class QDBIndivProvider;
 protected:
     DBStatIndiv(const IntType nId);
     DBStatIndiv(const IntType nId, const IntType nVersion, const QString &status,
@@ -248,7 +253,7 @@ public:
     inline IntType indiv_id(void) const{
         return (this->m_indid);
     }
-    inline const QVariant & value(void) const{
+    inline QVariant  value(void) const{
         return (this->m_val);
     }
     inline void value(const QVariant &v){

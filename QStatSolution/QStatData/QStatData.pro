@@ -14,11 +14,17 @@ CONFIG += staticlib
 
 SOURCES += qstatdata.cpp \
     dbstathelper.cpp \
-    qindiv.cpp
+    qindiv.cpp \
+    qdbindivprovider.cpp \
+    qindivcluster.cpp \
+    qindivtreeelem.cpp
 
 HEADERS += qstatdata.h \
     dbstathelper.h \
-    qindiv.h
+    qindiv.h \
+    qdbindivprovider.h \
+    qindivcluster.h \
+    qindivtreeelem.h
 unix {
     target.path = /usr/lib
     INSTALLS += target
