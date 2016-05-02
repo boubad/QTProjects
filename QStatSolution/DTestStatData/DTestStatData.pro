@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += network sql testlib
+QT       += network sql testlib concurrent
 
 QT       -= gui
 
