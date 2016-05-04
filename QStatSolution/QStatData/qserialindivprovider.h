@@ -1,33 +1,36 @@
-#ifndef QDBINDIVPROVIDER_H
-#define QDBINDIVPROVIDER_H
+#ifndef QSERIALINDIVPROVIDER_H
+#define QSERIALINDIVPROVIDER_H
 
-#include <QObject>
 #include "qindiv.h"
-#include "dbstathelper.h"
-//////////////////////
+///////////////////////////////////////
+#include <QObject>
+#include <QMutex>
+////////////////////////////////
 namespace info {
-class QDBIndivProvider : public QObject, public IIndivProvider
+class DBStatHelper;
+////////////////////////////////////////
+class QSerialIndivProvider : public QObject, public ISerialIndivProvider,
+        public IIndivProvider
 {
     Q_OBJECT
 private:
-    int     m_count;
-    DBStatHelper *m_pman;
+    bool m_mustDelete;
+    IIndivProvider *m_provider;
+    int m_current;
+    int m_nmax;
     DBStatDataset m_oset;
-    QMap<IntType,DBStatVariable> m_vars;
-    QVector<IntType> m_ids;
-    //
-    void initialize(void);
+    QMutex   _mutex;
 public:
-    explicit QDBIndivProvider(DBStatHelper *pMan,
+    explicit QSerialIndivProvider(IIndivProvider *pProvider,QObject *parent = 0);
+    explicit QSerialIndivProvider(DBStatHelper *pMan,
                               const DBStatDataset &oSet,
                               QObject *parent = 0);
-    explicit QDBIndivProvider(DBStatHelper *pMan,
+    explicit QSerialIndivProvider(DBStatHelper *pMan,
                               const QString &sigleDataset,
                               QObject *parent = 0);
-    virtual ~QDBIndivProvider(){}
+    virtual ~QSerialIndivProvider();
 public:
     virtual bool is_valid(void);
-    virtual bool get_variables(QList<DBStatVariable> &oVars);
     virtual bool indivs_count(int &nCount);
     virtual bool all_indivs_ids(QVector<IntType> &oIds);
     virtual bool contains_id(const IntType aId);
@@ -41,13 +44,17 @@ public:
     virtual bool distance_at(const int pos1, const int pos2,
                           double &dRes,
                              const VariableMode mode = VariableMode::modeNumeric);
+    virtual bool get_variables(QList<DBStatVariable> &oVars);
     virtual bool  find_next_indiv(const DBStatDataset &oSet,
                                   const int offset,QIndiv &oInd,
                                   const VariableMode mode = VariableMode::modeAll);
     virtual bool get_dataset(DBStatDataset &oSet);
-public slots:
-    // overrides
+    //
+    virtual bool reset(void);
+    virtual bool next(QIndiv &oInd,const VariableMode mode = VariableMode::modeAll);
+signals:
 
+public slots:
 };
 }// namespace info
-#endif // QDBINDIVPROVIDER_H
+#endif // QSERIALINDIVPROVIDER_H

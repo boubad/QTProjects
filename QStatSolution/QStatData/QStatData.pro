@@ -17,14 +17,18 @@ SOURCES += qstatdata.cpp \
     qindiv.cpp \
     qdbindivprovider.cpp \
     qindivcluster.cpp \
-    qindivtreeelem.cpp
+    qindivtreeelem.cpp \
+    qserialindivprovider.cpp \
+    qserialindivprovideractor.cpp
 
 HEADERS += qstatdata.h \
     dbstathelper.h \
     qindiv.h \
     qdbindivprovider.h \
     qindivcluster.h \
-    qindivtreeelem.h
+    qindivtreeelem.h \
+    qserialindivprovider.h \
+    qserialindivprovideractor.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

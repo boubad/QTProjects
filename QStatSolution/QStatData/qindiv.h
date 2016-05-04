@@ -84,10 +84,27 @@ public:
     virtual bool find_indiv_at(const int pos,QIndiv &oInd,
                                 const VariableMode mode = VariableMode::modeAll) = 0;
     virtual bool distance(const IntType aIndex1, const IntType &Index2,
-                          double &dRes) = 0;
+                          double &dRes,
+                          const VariableMode mode = VariableMode::modeNumeric) = 0;
     virtual bool distance_at(const int pos1, const int pos2,
-                          double &dRes) = 0;
+                          double &dRes,
+                          const VariableMode mode = VariableMode::modeNumeric) = 0;
+    virtual bool get_variables(QList<DBStatVariable> &oVars) = 0;
+    virtual bool  find_next_indiv(const DBStatDataset &oSet,
+                                  const int offset,QIndiv &oInd,
+                                  const VariableMode mode = VariableMode::modeAll) = 0;
+    virtual bool get_dataset(DBStatDataset &oSet) = 0;
+    virtual ~IIndivProvider(){}
 }; // class IIndivProvider
+/////////////////////////////////////////////////////
+class ISerialIndivProvider  {
+public:
+     virtual bool is_valid(void) = 0;
+    virtual bool reset(void) = 0;
+    virtual bool get_variables(QList<DBStatVariable> &oVars) = 0;
+    virtual bool next(QIndiv &oInd,const VariableMode mode = VariableMode::modeAll) = 0;
+    virtual ~ISerialIndivProvider(){}
+};// interface ISerialIndivProvider
 
 ///////////////////////////////////////////////////
 }// namespace info
