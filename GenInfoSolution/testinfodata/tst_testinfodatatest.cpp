@@ -3,16 +3,23 @@
 //////////////////////////////////
 #include "infotestdata.h"
 //////////////////////////////
+#include <QDebug>
 #include <qmatricedata.h>
+#include <qmatelem.h>
+////////////////////////
+#include  <atomic>
 ///////////////////
 using namespace info;
 //////////
 class TestinfodataTest : public QObject
 {
     Q_OBJECT
+public:
+    using result_type = std::shared_ptr<int>;
 private:
     int  nRows;
     int nCols;
+    std::atomic<bool> m_ended;
     QString name;
     QStringList rowNames;
     QStringList colNames;
@@ -24,9 +31,14 @@ private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
     void testMatDataSetData();
+    void testArrangeMatElem();
+private:
+    void receive_results(double c);
+    void receive_start(void);
+    void receive_end(void);
 };
 
-TestinfodataTest::TestinfodataTest()
+TestinfodataTest::TestinfodataTest():nRows(0),nCols(0),m_ended(false)
 {
 }
 
@@ -37,6 +49,7 @@ void TestinfodataTest::initTestCase()
     std::vector<int> xdata;
     size_t r = 0, c = 0;
     //
+    m_ended.store(false);
     name.clear();
     nRows = 0;
     nCols = 0;
@@ -86,9 +99,43 @@ void TestinfodataTest::cleanupTestCase()
      QVERIFY(pxdata != nullptr);
      bool bRet = pData->set_data(nRows,nCols,pxdata,&rowNames,&colNames);
      QVERIFY(bRet);
+     delete pData;
  }// testMatDataSetData
+  void TestinfodataTest::testArrangeMatElem(){
+      QMatriceData *pData = new QMatriceData(this);
+      QVERIFY(pData != nullptr);
+      const int *pxdata = this->gdata.get();
+      QVERIFY(pxdata != nullptr);
+      bool bRet = pData->set_data(nRows,nCols,pxdata,&rowNames,&colNames);
+      QVERIFY(bRet);
+      const QDistanceMap *pMap = pData->get_rows_distancesmap();
+      QVERIFY(pMap != nullptr);
+      QMatElem *pElem = new QMatElem(pMap,this);
+      QVERIFY(pElem != nullptr);
+      connect(pElem,&QMatElem::start_arrange,this,&TestinfodataTest::receive_start);
+      connect(pElem,&QMatElem::end_arrange,this,&TestinfodataTest::receive_end);
+      connect(pElem,&QMatElem::newcriteria,this,&TestinfodataTest::receive_results);
+      pElem->arrange();
+      delete pElem;
+      delete pData;
+  }
 
+ void TestinfodataTest::receive_results(double c){
+    QString sRes = QString("CRIT: %1").arg(c);
+    qDebug() << sRes;
+ }
 
-QTEST_APPLESS_MAIN(TestinfodataTest)
+ void TestinfodataTest::receive_start(void){
+     this->m_ended.store(false);
+      qDebug() << QString("RECEIVED START...!!!....");
+ }
 
+ void TestinfodataTest::receive_end(void){
+    this->m_ended.store(true);
+     qDebug() << QString("RECEIVED FINISHED....");
+ }
+ ////////////////////////////////////////
+QTEST_GUILESS_MAIN(TestinfodataTest)
+//QTEST_APPLESS_MAIN(TestinfodataTest)
+////////////////////////////////////////
 #include "tst_testinfodatatest.moc"

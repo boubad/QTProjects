@@ -4,7 +4,7 @@ namespace info {
 ////////////////////////////////
 QMatElemControl::QMatElemControl(const QDistanceMap *pMap,QObject *parent):QObject(parent){
     Q_ASSERT(pMap != nullptr);
-    QMatElem *worker = new QMatElem(pMap,this);
+    QMatElem *worker = new QMatElem(pMap);
     worker->moveToThread(&workerThread);
     connect(&workerThread, &QThread::finished, worker, &QObject::deleteLater);
     connect(this,  &QMatElemControl::arrange, worker, &QMatElem::arrange);
@@ -21,8 +21,8 @@ void QMatElemControl::start_arrange(void){
     emit started();
 }
 
-void QMatElemControl::newcriteria(double c, result_type ind ){
-    emit current(c,ind);
+void QMatElemControl::newcriteria(double c ){
+    emit current(c);
 }
 
 void QMatElemControl::end_arrange(void){
@@ -41,20 +41,6 @@ QMatElem::~QMatElem(){
 }
 void QMatElem::cancel(void){
     this->m_cancel.store(true);
-}
-QMatElem::result_type  QMatElem::get_result(void){
-    ints_vector &oInd = this->m_indexes;
-    const int n = oInd.size();
-    std::shared_ptr<int> ox;
-    ox.reset(new int[n]);
-    int *pi = ox.get();
-    if (pi != nullptr){
-        for (int i = 0; i < n; ++i){
-            pi[i] = oInd[i];
-        }
-        emit newcriteria(this->m_lastcrit,ox);
-    }// pi
-    return (ox);
 }
 
 void QMatElem::arrange(void){
@@ -83,8 +69,7 @@ void QMatElem::arrange(void){
         oInd[i] = oInd[j];
         oInd[j] = t;
         this->m_lastcrit = crit;
-        result_type ox = this->get_result();
-        emit newcriteria(crit,ox);
+        emit newcriteria(crit);
     }//
     emit end_arrange();
 }// arrange

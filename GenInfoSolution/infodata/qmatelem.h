@@ -18,13 +18,12 @@ class QMatElem : public QObject
 public:
     using ints_vector = QVector<int>;
     using pair_type = QPair<int,int>;
-    using result_type = std::shared_ptr<int>;
 public:
     explicit QMatElem(const QDistanceMap *pMap, QObject *parent = 0);
     virtual ~QMatElem();
 signals:
     void start_arrange(void);
-    void newcriteria(double c, result_type res );
+    void newcriteria(double c);
     void end_arrange(void);
 public slots:
     void arrange(void);
@@ -37,7 +36,6 @@ public:
         return (this->m_indexes);
     }
 protected:
-    result_type get_result(void);
     bool find_best_permutation(pair_type &oPair, double &bestCrit) const;
 private:
     std::atomic<bool> m_cancel;
@@ -50,18 +48,16 @@ class QMatElemControl : public QObject {
     Q_OBJECT
     QThread workerThread;
 public:
-    using result_type = std::shared_ptr<int>;
-public:
     explicit QMatElemControl(const QDistanceMap *pMap, QObject *parent = 0);
     virtual ~QMatElemControl();
 signals:
     void arrange(void);
-    void current(double c, result_type res);
+    void current(double c);
     void started(void);
     void finished(void);
 public slots:
     void start_arrange(void);
-    void newcriteria(double c, result_type res );
+    void newcriteria(double c );
     void end_arrange(void);
 };// class QMatElemControl
 

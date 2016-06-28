@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += sql concurrent testlib
+QT       += core sql concurrent testlib
 
 QT       -= gui
 
