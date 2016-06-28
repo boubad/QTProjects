@@ -16,11 +16,13 @@ QMAKE_CXXFLAGS_RELEASE += -DNDEBUG
 
 SOURCES += infodata.cpp \
     qmatricedata.cpp \
-    qdistancemap.cpp
+    qdistancemap.cpp \
+    qmatelem.cpp
 
 HEADERS += infodata.h \
     qmatricedata.h \
-    qdistancemap.h
+    qdistancemap.h \
+    qmatelem.h
 unix {
     target.path = /usr/lib
     INSTALLS += target
