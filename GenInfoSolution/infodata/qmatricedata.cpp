@@ -8,7 +8,7 @@ QMatriceData::QMatriceData(QObject *parent) : QObject(parent), m_nrows(0),m_ncol
 QMatriceData::~QMatriceData()
 {
     delete m_prowdist;
-    m_prowdist = nullptr;//?
+    m_prowdist = nullptr;//?////
     delete m_pcoldist;
     m_pcoldist = nullptr; //?///?
 }
