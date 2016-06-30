@@ -3,10 +3,9 @@
 //////////////////////////////
 #include "qdistancemap.h"
 //////////////////////////////
+#include <QFuture>
 #include <QPair>
-#include <QThread>
 ////////////////////
-#include <memory>
 #include <atomic>
 //////////////////////////////
 namespace info {
@@ -27,6 +26,7 @@ signals:
     void end_arrange(void);
 public slots:
     void arrange(void);
+    QFuture<bool> arrangeAsync(void);
     void cancel(void);
 public:
     double criteria(void) const {
@@ -44,23 +44,5 @@ private:
     ints_vector m_indexes;
 };
 ////////////////////////////////////
-class QMatElemControl : public QObject {
-    Q_OBJECT
-    QThread workerThread;
-public:
-    explicit QMatElemControl(const QDistanceMap *pMap, QObject *parent = 0);
-    virtual ~QMatElemControl();
-signals:
-    void arrange(void);
-    void current(double c);
-    void started(void);
-    void finished(void);
-public slots:
-    void start_arrange(void);
-    void newcriteria(double c );
-    void end_arrange(void);
-};// class QMatElemControl
-
-///////////////////////
 }// namespace info
 #endif // QMATELEM_H

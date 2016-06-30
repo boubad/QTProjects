@@ -31,7 +31,9 @@ private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
     void testMatDataSetData();
+     void testMatDataSetDataAsync();
     void testArrangeMatElem();
+    void testArrangeMatElemAsync();
 private:
     void receive_results(double c);
     void receive_start(void);
@@ -93,15 +95,43 @@ void TestinfodataTest::cleanupTestCase()
     gdata.reset();
 }
  void TestinfodataTest::testMatDataSetData(){
-     QMatriceData *pData = new QMatriceData(this);
+     QMatriceData *pData = new QMatriceData();
      QVERIFY(pData != nullptr);
      const int *pxdata = this->gdata.get();
      QVERIFY(pxdata != nullptr);
      bool bRet = pData->set_data(nRows,nCols,pxdata,&rowNames,&colNames);
      QVERIFY(bRet);
-     delete pData;
+    pData->deleteLater();
+ }// testMatDataSetData
+ void TestinfodataTest::testMatDataSetDataAsync(){
+     QMatriceData *pData = new QMatriceData();
+     QVERIFY(pData != nullptr);
+     const int *pxdata = this->gdata.get();
+     QVERIFY(pxdata != nullptr);
+     QFuture<bool> bf = pData->setDataAsync(nRows,nCols,pxdata,&rowNames,&colNames);
+     bool bRet = bf.result();
+     QVERIFY(bRet);
+     pData->deleteLater();
  }// testMatDataSetData
   void TestinfodataTest::testArrangeMatElem(){
+      QMatriceData *pData = new QMatriceData(this);
+      QVERIFY(pData != nullptr);
+      const int *pxdata = this->gdata.get();
+      QVERIFY(pxdata != nullptr);
+      bool bRet = pData->set_data(nRows,nCols,pxdata,&rowNames,&colNames);
+      QVERIFY(bRet);
+      const QDistanceMap *pMap = pData->get_rows_distancesmap();
+      QVERIFY(pMap != nullptr);
+      QMatElem *pElem = new QMatElem(pMap,this);
+      QVERIFY(pElem != nullptr);
+    //  connect(pElem,&QMatElem::start_arrange,this,&TestinfodataTest::receive_start);
+    //  connect(pElem,&QMatElem::end_arrange,this,&TestinfodataTest::receive_end);
+    //  connect(pElem,&QMatElem::newcriteria,this,&TestinfodataTest::receive_results);
+      pElem->arrange();
+      pElem->deleteLater();
+      pData->deleteLater();
+  }
+  void TestinfodataTest::testArrangeMatElemAsync(){
       QMatriceData *pData = new QMatriceData(this);
       QVERIFY(pData != nullptr);
       const int *pxdata = this->gdata.get();
@@ -115,11 +145,13 @@ void TestinfodataTest::cleanupTestCase()
       connect(pElem,&QMatElem::start_arrange,this,&TestinfodataTest::receive_start);
       connect(pElem,&QMatElem::end_arrange,this,&TestinfodataTest::receive_end);
       connect(pElem,&QMatElem::newcriteria,this,&TestinfodataTest::receive_results);
-      pElem->arrange();
-      delete pElem;
-      delete pData;
+      QFuture<bool> f = pElem->arrangeAsync();
+      bRet = f.result();
+      QVERIFY(bRet);
+      //qDebug() << "\n" <<  pElem->indexes();
+      pElem->deleteLater();
+      pData->deleteLater();
   }
-
  void TestinfodataTest::receive_results(double c){
     QString sRes = QString("CRIT: %1").arg(c);
     qDebug() << sRes;

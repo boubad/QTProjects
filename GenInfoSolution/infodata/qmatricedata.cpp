@@ -22,7 +22,7 @@ bool QMatriceData::compute_coldist(void){
     if ((nRows < 1) || (nCols < 1) || (pData == nullptr)){
         return (false);
     }
-    QDistanceMap *pMap = new QDistanceMap(this);
+    QDistanceMap *pMap = new QDistanceMap();
     if (pMap == nullptr){
         return (false);
     }
@@ -51,7 +51,7 @@ bool QMatriceData::compute_rowdist(void){
     if ((nRows < 1) || (nCols < 1) || (pData == nullptr)){
         return (false);
     }
-    QDistanceMap *pMap = new QDistanceMap(this);
+    QDistanceMap *pMap = new QDistanceMap();
     if (pMap == nullptr){
         return (false);
     }

@@ -1,33 +1,7 @@
 #include "qmatelem.h"
+#include <QtConcurrent>
 /////////////////////////////
 namespace info {
-////////////////////////////////
-QMatElemControl::QMatElemControl(const QDistanceMap *pMap,QObject *parent):QObject(parent){
-    Q_ASSERT(pMap != nullptr);
-    QMatElem *worker = new QMatElem(pMap);
-    worker->moveToThread(&workerThread);
-    connect(&workerThread, &QThread::finished, worker, &QObject::deleteLater);
-    connect(this,  &QMatElemControl::arrange, worker, &QMatElem::arrange);
-    connect(worker, &QMatElem::start_arrange, this, &QMatElemControl::start_arrange);
-    connect(worker, &QMatElem::newcriteria, this, &QMatElemControl::newcriteria);
-    connect(worker, &QMatElem::end_arrange, this,&QMatElemControl::end_arrange);
-    workerThread.start();
-}
-QMatElemControl::~QMatElemControl() {
-    workerThread.quit();
-    workerThread.wait();
-}
-void QMatElemControl::start_arrange(void){
-    emit started();
-}
-
-void QMatElemControl::newcriteria(double c ){
-    emit current(c);
-}
-
-void QMatElemControl::end_arrange(void){
-    emit finished();
-}
 ////////////////////////
 QMatElem::QMatElem(const QDistanceMap *pMap,QObject *parent) : QObject(parent),
     m_cancel(false),m_pMap(pMap),m_lastcrit(0)
@@ -73,6 +47,13 @@ void QMatElem::arrange(void){
     }//
     emit end_arrange();
 }// arrange
+QFuture<bool> QMatElem::arrangeAsync(void){
+    return QtConcurrent::run([this]()->bool{
+                                 this->arrange();
+                                 return (true);
+                             });
+}// arrangeAsync
+
 bool QMatElem::find_best_permutation(pair_type &oPair, double &bestCrit) const{
     oPair.first = 0;
     oPair.second = 0;

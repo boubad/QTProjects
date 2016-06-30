@@ -4,6 +4,7 @@
 #include "qdistancemap.h"
 ///////////////////////////////
 #include <QFuture>
+#include <QtConcurrent>
 #include <QString>
 #include <QStringList>
 #include <memory>
@@ -23,14 +24,23 @@ public slots:
 public:
     template <typename X>
     bool set_data(const size_t nRows, const size_t nCols, const X &data,
-         const QStringList *pRowNames = nullptr,
-         const QStringList *pColNames = nullptr){
+                  const QStringList *pRowNames = nullptr,
+                  const QStringList *pColNames = nullptr){
         bool bRet = this->initialize(nRows,nCols,data);
         bRet = bRet && this->compute_rowdist();
         bRet = bRet && this->compute_coldist();
         bRet = bRet && this->set_names(pRowNames,pColNames);
         return (bRet);
     }// set_data
+    template <typename X>
+    QFuture<bool> setDataAsync(const size_t nRows, const size_t nCols, const X &data,
+                               const QStringList *pRowNames = nullptr,
+                               const QStringList *pColNames = nullptr){
+        return QtConcurrent::run([this,nRows,nCols,data,pRowNames,pColNames]()->bool{
+            return this->set_data(nRows,nCols,data,pRowNames,pColNames);
+        });
+    }// setDataAsync
+
     int rows(void) const {
         return (this->m_nrows);
     }
