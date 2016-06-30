@@ -10,7 +10,7 @@ QMatriceData::~QMatriceData()
     delete m_prowdist;
     m_prowdist = nullptr;//?
     delete m_pcoldist;
-    m_pcoldist = nullptr;
+    m_pcoldist = nullptr; //?
 }
 bool QMatriceData::compute_coldist(void){
     if (this->m_pcoldist != nullptr){
