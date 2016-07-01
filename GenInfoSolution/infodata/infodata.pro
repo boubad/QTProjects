@@ -14,15 +14,12 @@ CONFIG += staticlib
 QMAKE_CXXFLAGS += -std=c++11
 QMAKE_CXXFLAGS_RELEASE += -DNDEBUG
 
-SOURCES += infodata.cpp \
-    qmatricedata.cpp \
-    qdistancemap.cpp \
-    qmatelem.cpp
+SOURCES += infodata.cpp
 
 HEADERS += infodata.h \
-    qmatricedata.h \
-    qdistancemap.h \
-    qmatelem.h
+    distancemap.h \
+    matricedata.h \
+    matelem.h
 unix {
     target.path = /usr/lib
     INSTALLS += target
