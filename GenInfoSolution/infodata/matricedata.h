@@ -10,6 +10,8 @@
 #include <memory>
 /////////////////////////////
 namespace info {
+////////////////////////////////
+enum class MatDispositionType { dispRow, dispCol};
 ///////////////////////////
 /// \brief The MatriceData class
 template <typename INDEXTYPE, typename FLOATTYPE, typename DISTANCETYPE>

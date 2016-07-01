@@ -19,7 +19,9 @@ SOURCES += infodata.cpp
 HEADERS += infodata.h \
     distancemap.h \
     matricedata.h \
-    matelem.h
+    matelem.h \
+    treeelem.h \
+    indiv.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

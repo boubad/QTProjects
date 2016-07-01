@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <matricedata.h>
 #include <matelem.h>
+#include <treeelem.h>
 ////////////////////////
 #include  "global_defs.h"
 ///////////////////
@@ -23,6 +24,11 @@ public:
     using matelem_result_type = typename matelem_type::matelem_result_type;
     using criteria_type = typename matelem_type::criteria_type;
     using index_type = typename matelem_type::criteria_type;
+    //
+    using mattree_type = MatTree<INDEXTYPE,FLOATTYPE>;
+    using TreeResultType = mattree_type::TreeResultType;
+    using TreeResultTypePtr = mattree_type::TreeResultTypePtr;
+    using ints_sizet_map = mattree_type::ints_sizet_map;
 public:
     static void process_matelem_result(matelem_result_type r){
         QString sRes = QString("CRIT: %1").arg(r.first);
@@ -140,9 +146,9 @@ void TestinfodataTest::testArrangeMatElem(){
     const distancemap_type *pMap = oData.get_rows_distancesmap();
     QVERIFY(pMap != nullptr);
     matelem_type oMat(pMap);
-    oMat.setCallback([](matelem_result_type r){
-        TestinfodataTest::process_matelem_result(r);
-    });
+  //  oMat.setCallback([](matelem_result_type r){
+   //     TestinfodataTest::process_matelem_result(r);
+   // });
     matelem_result_type r = oMat.arrange();
     TestinfodataTest::process_matelem_result(r);
 }
@@ -155,9 +161,6 @@ void TestinfodataTest::testArrangeMatElemAsync(){
     const distancemap_type *pMap = oData.get_rows_distancesmap();
     QVERIFY(pMap != nullptr);
     matelem_type oMat(pMap);
-    oMat.setCallback([](matelem_result_type r){
-        TestinfodataTest::process_matelem_result(r);
-    });
     QFuture<matelem_result_type> fr = oMat.arrangeAsync();
     matelem_result_type r = fr.result();
     TestinfodataTest::process_matelem_result(r);
