@@ -52,7 +52,7 @@ public:
         Q_ASSERT(p != nullptr);
         const data_type *p1 = pLeft->center();
         const data_type *p2 = pRight->center();
-        for (size_t i = 0; i < nCols; ++i){
+        for (int i = 0; i < nCols; ++i){
             p[i] = (data_type)((p1[i] + p2[i]) / 2.0);
         }// i
     } // TreeItem
@@ -183,10 +183,10 @@ public:
         if (disp == MatDispositionType::dispRow){
             for (int i = 0; i < nRows; ++i){
                 index_type aIndex = (index_type)(i + 1);
-                string_type sigle = pData->row_name(i);
+                string_type sigle = pData->get_row_name(i);
                 QVector<data_type> data(nCols);
                 for (int j = 0; j < nCols; ++j){
-                    data[j] = (data_type)pData->get_value(i,j);
+                    data[j] = (data_type)pData->get_data(i,j);
                 }// j
                 treeitem_ptr oPtr = std::make_shared<TreeItemType>(aIndex,nCols,data,sigle);
                 Q_ASSERT(oPtr.get() != nullptr);
@@ -195,10 +195,10 @@ public:
         } else if (disp == MatDispositionType::dispCol){
             for (int i = 0; i < nCols; ++i){
                 index_type aIndex = (index_type)(i + 1);
-                string_type sigle = pData->col_name(i);
+                string_type sigle = pData->get_col_name(i);
                 QVector<data_type> data(nRows);
                 for (int j = 0; j < nRows; ++j){
-                    data[j] = (data_type)pData->get_value(j,i);
+                    data[j] = (data_type)pData->get_data(j,i);
                 }// j
                 treeitem_ptr oPtr = std::make_shared<TreeItemType>(aIndex,nCols,data,sigle);
                 Q_ASSERT(oPtr.get() != nullptr);
@@ -212,15 +212,19 @@ public:
         bool done = false;
         XF res = r;
         while (!done){
-            if (!this->is_cancellation_requested()){
+            int n = this->m_items.size();
+            if (this->is_cancellation_requested()){
                 return (oRet);
             }
-            if (this->m_items.size() <= nClasses){
+            if (n < nClasses){
                 done = true;
                 break;
             }
-            if (!this->aggreg_one_step(res,nClasses)){
-                if (!this->is_cancellation_requested()){
+            if (n == nClasses){
+                this->get_map(this->m_result.map());
+            }
+            if (!this->aggreg_one_step(res)){
+                if (this->is_cancellation_requested()){
                     return (oRet);
                 }
                 done = true;
@@ -244,7 +248,6 @@ protected:
             const treeitems_vector &v = this->m_items;
             const int n = v.size();
             for (int i = 0; i < n; ++i){
-              int val = i + 1 ;
               PTreeItemType p = (v[i]).get();
               Q_ASSERT(p != nullptr);
               p->get_ids(oVec);
@@ -302,17 +305,15 @@ protected:
         return (oPair.first != oPair.second);
     }//
     template <typename XF>
-    bool aggreg_one_step(XF &crit, int nClasses){
+    bool aggreg_one_step(XF &crit){
+        Q_UNUSED(crit);
         treeitems_vector &v = this->m_items;
-        size_t n = v.size();
+        int n = v.size();
         if (n < 2){
             return (false);
         }
-        if (n == nClasses){
-            this->get_map(this->m_result.map());
-        }
         pair_type oPair;
-        if (!this->find_best_aggreg(oPair)){
+        if (!this->find_best_aggreg(oPair,crit)){
             return (false);
         }
         int i1 = oPair.first;

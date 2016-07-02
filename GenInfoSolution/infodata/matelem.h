@@ -2,6 +2,7 @@
 #define QMATELEM_H
 //////////////////////////////
 #include "distancemap.h"
+#include "matricedata.h"
 //////////////////////////////
 #include <QQueue>
 #include <QPair>
@@ -32,11 +33,25 @@ public:
     using future_type = QFuture<matelem_result_type>;
     using cancellableflag_type = std::atomic<bool>;
 public:
-    MatElem(const distancemap_type *pMap,cancellableflag_type *pf = nullptr):
-        m_pcancel(pf),m_notify(false),m_pdist(pMap),m_crit(0),m_callback( [](matelem_result_type){}){
+    template <typename FLOATTYPE>
+    MatElem(const MatriceData<index_type,FLOATTYPE,distance_type> *pData,
+            MatDispositionType disp = MatDispositionType::dispRow,
+            cancellableflag_type *pf = nullptr):
+        m_pcancel(pf),m_notify(false),m_pdist(nullptr),m_crit(0),m_callback( [](matelem_result_type){}){
+    Q_ASSERT(pData != nullptr);
+    const distancemap_type *pMap = (disp == MatDispositionType::dispRow) ?
+                pData->get_rows_distancesmap() : pData->get_cols_distancesmap();
     Q_ASSERT(pMap != nullptr);
+    m_pdist = pMap;
     pMap->get_indexes(this->m_indexes);
     pMap->compute_criteria(this->m_indexes,this->m_crit);
+}// MatElem
+
+MatElem(const distancemap_type *pMap,cancellableflag_type *pf = nullptr):
+    m_pcancel(pf),m_notify(false),m_pdist(pMap),m_crit(0),m_callback( [](matelem_result_type){}){
+Q_ASSERT(pMap != nullptr);
+pMap->get_indexes(this->m_indexes);
+pMap->compute_criteria(this->m_indexes,this->m_crit);
 }
 virtual ~MatElem(){}
 void setCallback(matelem_callback_type ff){
@@ -53,6 +68,15 @@ criteria_type criteria(void) const {
 const ints_vector & indexes(void) const {
     return (this->m_indexes);
 }// indexes
+template <typename X>
+void indexes(const QVector<X> &oInds){
+    ints_vector &v = this->m_indexes;
+    int n = v.size();
+    for (int i = 0; i < n; ++i){
+        v[i] = (index_type)oInds[i];
+    }
+}// indexes
+
 matelem_result_type arrange(void){
     bool done = false;
     while (!done){

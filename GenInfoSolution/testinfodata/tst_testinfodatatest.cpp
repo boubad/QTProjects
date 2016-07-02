@@ -30,23 +30,53 @@ public:
     using TreeResultTypePtr = mattree_type::TreeResultTypePtr;
     using ints_sizet_map = mattree_type::ints_sizet_map;
 public:
+    template <typename X>
+    static QString display_array(const X &v){
+        QString sRes("[ ");
+        for (auto it = v.begin(); it != v.end(); ++it){
+            if (it != v.begin()){
+                sRes += QString(", ");
+            }
+            sRes += QString("%1").arg(*it);
+        }// it
+        return sRes;
+        sRes += QString(" ]");
+    }// display_array
+    template <typename X,typename F>
+    static QString display_map(const QMap<X,F>  &oMap){
+        QString sRes("[ ");
+        for (auto it = oMap.begin(); it != oMap.end(); ++it){
+            if (it != oMap.begin()){
+                sRes += QString(", ");
+            }
+            X v1 = it.key();
+            F v2 = it.value();
+            sRes += QString("(%1").arg(v1);
+            sRes += QString(",%1)").arg(v2);
+        }// it
+        sRes += QString(" ]");
+        return sRes;
+    }// display_array
     static void process_matelem_result(matelem_result_type r){
-        QString sRes = QString("CRIT: %1").arg(r.first);
+        QString sRes = QString("CRIT: %1 ").arg(r.first);
         ints_vector_ptr oind = r.second;
         ints_vector *pv = oind.get();
         if (pv != nullptr){
-            const int n = pv->size();
-            sRes += QString(" [ ");
-            for (int i = 0; i < n; ++i){
-                if (i != 0){
-                    sRes += QString(", ");
-                }
-                sRes += QString("%1").arg((*pv)[i]);
-            }// i
-            sRes += QString(" ]");
+            QString ss = display_array(*pv);
+            sRes += ss;
         }// pv
         qDebug() << sRes;
     }//  process_matelem_result
+    static void process_tree_result(TreeResultTypePtr r){
+        QString sRes;
+        TreeResultType *p = r.get();
+        if (p != nullptr){
+            QString s1 = display_array(p->ids());
+            QString s2 = display_map(p->map());
+            sRes += QString("%1\n%2").arg(s1,s2);
+        }// p
+        qDebug() << sRes;
+    }//process_tree_result
 
 private:
     int  nRows;
@@ -65,7 +95,7 @@ private Q_SLOTS:
     void testMatDataSetDataAsync();
     void testArrangeMatElem();
     void testArrangeMatElemAsync();
-
+    void testAggreg();
 };
 
 TestinfodataTest::TestinfodataTest():nRows(0),nCols(0)
@@ -165,6 +195,30 @@ void TestinfodataTest::testArrangeMatElemAsync(){
     matelem_result_type r = fr.result();
     TestinfodataTest::process_matelem_result(r);
 }
+void TestinfodataTest::testAggreg(){
+    matricedata_type oData;
+    QFuture<bool> f = oData.setDataAsync(nRows,nCols,gdata.get(),name,&rowNames,&colNames);
+    bool bRet = f.result();
+    QVERIFY(bRet);
+    QVERIFY(oData.is_valid());
+    double s = 0;
+    int nbClasses = 5;
+    mattree_type oTree(&oData);
+    TreeResultTypePtr r = oTree.aggreg(s,nbClasses);
+    TreeResultType *pr = r.get();
+    QVERIFY(pr != nullptr);
+    TestinfodataTest::process_tree_result(r);
+    matelem_type oMat(&oData);
+    /*
+    oMat.setCallback([](matelem_result_type r){
+        TestinfodataTest::process_matelem_result(r);
+   });
+   */
+    oMat.indexes(pr->ids());
+    matelem_result_type rm= oMat.arrange();
+    TestinfodataTest::process_matelem_result(rm);
+}// testAggreg
+
 ////////////////////////////////////////
 QTEST_MAIN(TestinfodataTest)
 //QTEST_GUILESS_MAIN(TestinfodataTest)

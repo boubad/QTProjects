@@ -14,14 +14,16 @@ CONFIG += staticlib
 QMAKE_CXXFLAGS += -std=c++11
 QMAKE_CXXFLAGS_RELEASE += -DNDEBUG
 
-SOURCES += infodata.cpp
+SOURCES += infodata.cpp \
+    qarrangemanager.cpp
 
 HEADERS += infodata.h \
     distancemap.h \
     matricedata.h \
     matelem.h \
     treeelem.h \
-    indiv.h
+    indiv.h \
+    qarrangemanager.h
 unix {
     target.path = /usr/lib
     INSTALLS += target

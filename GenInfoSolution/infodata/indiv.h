@@ -42,7 +42,7 @@ public:
         return (this->m_index);
     }
     int size(void) const {
-        assert(this->m_ncols > 0);
+        Q_ASSERT(this->m_ncols > 0);
         return (this->m_ncols);
     }
     string_type sigle(void) const {
